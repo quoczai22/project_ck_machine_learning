@@ -1,0 +1,8 @@
+﻿ThongTin,KetQua
+Tên dataset,Pima Indians Diabetes
+Số dòng,768
+Số cột,9
+Số feature,8
+Target,Outcome
+Số mẫu Outcome = 0,500
+Số mẫu Outcome = 1,268

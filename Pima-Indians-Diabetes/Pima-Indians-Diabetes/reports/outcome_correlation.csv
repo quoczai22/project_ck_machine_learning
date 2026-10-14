@@ -1,0 +1,9 @@
+﻿Feature,Correlation_with_Outcome
+Glucose,0.467
+BMI,0.293
+Age,0.238
+Pregnancies,0.222
+DiabetesPedigreeFunction,0.174
+Insulin,0.131
+SkinThickness,0.075
+BloodPressure,0.065
