@@ -1,0 +1,407 @@
+# ==============================================================================
+# VIỆC 6: LUỒNG XỬ LÝ DỮ LIỆU CHO CÁC MODEL (PIPELINE)
+# ==============================================================================
+
+import pandas as pd
+import numpy as np
+import io
+import time
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+import seaborn as sns
+from google.colab import files
+
+from sklearn.model_selection import train_test_split
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
+
+print("="*70)
+print("   VIỆC 6: LUỒNG XỬ LÝ DỮ LIỆU CHO CÁC MODEL")
+print("="*70)
+
+
+# ==============================================================================
+# BƯỚC 1: UPLOAD VÀ ĐỌC DỮ LIỆU ĐÃ XỬ LÝ NaN (TỪ VIỆC 5)  ← SỬA CHỖ NÀY
+# ==============================================================================
+print("\n>>> BƯỚC 1: Tải lên file 'pima_indians_zero_as_missing_NaN.csv' (đã xử lý ở Việc 5)...")
+uploaded = files.upload()
+filename = list(uploaded.keys())[0]
+
+# Đọc file CSV đã có NaN (từ Việc 5)
+df = pd.read_csv(io.BytesIO(uploaded[filename]))
+
+print(f">>> Đã đọc: {df.shape[0]} dòng, {df.shape[1]} cột")
+
+# ---- Kiểm tra dữ liệu đã có NaN chưa ----
+print("\n[KIỂM TRA DỮ LIỆU ĐẦU VÀO]:")
+print("-"*60)
+zero_cols_check = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+nan_counts = df[zero_cols_check].isna().sum()
+print("Số lượng NaN ở 5 cột sinh lý:")
+print(nan_counts.to_string())
+print(f"Tổng số NaN: {nan_counts.sum()}")
+print(f"Số lượng giá trị 0 còn lại: {(df[zero_cols_check] == 0).sum().sum()}")
+
+assert (df[zero_cols_check] == 0).sum().sum() == 0, "❌ File chưa được xử lý 0 -> NaN!"
+print("\nDữ liệu đầu vào ĐÃ có NaN sẵn (từ Việc 5).")
+print()
+
+
+# ==============================================================================
+# YÊU CẦU 1: LÊN LUỒNG XỬ LÝ DỮ LIỆU CHO CÁC MODEL
+# ==============================================================================
+print("="*70)
+print("   YÊU CẦU 1: LUỒNG XỬ LÝ DỮ LIỆU CHO MODEL")
+print("="*70)
+
+# ---- 1.1. Tách Features / Label ----
+X = df.drop(columns=['Class'])
+y = df['Class']
+
+# ---- 1.2. Chia Train/Test ----
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+print(f"\n>>> Đã chia dữ liệu:")
+print(f"    Train: {len(X_train)} mẫu ({len(X_train)/len(X)*100:.1f}%)")
+print(f"    Test : {len(X_test)} mẫu ({len(X_test)/len(X)*100:.1f}%)\n")
+
+# ---- 1.3. Custom Transformer: Zero -> Missing (để handle dữ liệu mới) ----
+class ZeroToMissingTransformer(BaseEstimator, TransformerMixin):
+    """
+    Chuyển 0 -> NaN trên 5 cột sinh lý. Giữ nguyên 0 ở Pregnancies.
+
+    Lưu ý: Dữ liệu từ Việc 5 đã có NaN sẵn → bước này không làm gì.
+    Nhưng vẫn cần giữ để xử lý DỮ LIỆU MỚI (bệnh nhân mới có thể nhập số 0).
+    """
+    def __init__(self, cols_to_convert):
+        self.cols_to_convert = cols_to_convert
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X_copy = X.copy()
+        for col in self.cols_to_convert:
+            if col in X_copy.columns:
+                X_copy[col] = X_copy[col].replace(0, np.nan)
+        return X_copy
+
+# ---- 1.4. Xây dựng Pipeline 4 bước ----
+zero_cols = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+
+preprocessing_pipeline = Pipeline(steps=[
+    ('zero_to_missing', ZeroToMissingTransformer(cols_to_convert=zero_cols)),
+    ('imputer',         SimpleImputer(strategy='median')),
+    ('scaler',          StandardScaler()),
+    ('classifier',      RandomForestClassifier(random_state=42))
+])
+
+print(">>> Luồng xử lý dữ liệu (PIPELINE) đã được thiết kế:")
+print("    ┌─────────────────────────────────────────────────────┐")
+print("    │  INPUT: Dữ liệu từ Việc 5 (đã có NaN)               │")
+print("    └─────────────────────────────────────────────────────┘")
+print("                          ↓")
+print("    ┌─────────────────────────────────────────────────────┐")
+print("    │  BƯỚC 1: ZeroToMissingTransformer                   │")
+print("    │     → Đổi 0 -> NaN (dự phòng cho dữ liệu mới)       │")
+print("    └─────────────────────────────────────────────────────┘")
+print("                          ↓")
+print("    ┌─────────────────────────────────────────────────────┐")
+print("    │  BƯỚC 2: SimpleImputer(strategy='median')           │")
+print("    │     → Điền NaN bằng Median của tập Train            │")
+print("    └─────────────────────────────────────────────────────┘")
+print("                          ↓")
+print("    ┌─────────────────────────────────────────────────────┐")
+print("    │  BƯỚC 3: StandardScaler                             │")
+print("    │     → Chuẩn hóa về mean=0, std=1                    │")
+print("    └─────────────────────────────────────────────────────┘")
+print("                          ↓")
+print("    ┌─────────────────────────────────────────────────────┐")
+print("    │  BƯỚC 4: RandomForestClassifier                     │")
+print("    │     → Phân loại: 0 (Khỏe) / 1 (Tiểu đường)          │")
+print("    └─────────────────────────────────────────────────────┘")
+print("                          ↓")
+print("    ┌─────────────────────────────────────────────────────┐")
+print("    │  OUTPUT: Dự đoán nhãn bệnh                          │")
+print("    └─────────────────────────────────────────────────────┘")
+
+
+# ---- 1.5. Vẽ SƠ ĐỒ LUỒNG XỬ LÝ (PIPELINE DIAGRAM) ----
+fig, ax = plt.subplots(figsize=(14, 10))
+ax.set_xlim(0, 10)
+ax.set_ylim(0, 14)
+ax.axis('off')
+
+steps = [
+    ("INPUT", "Dữ liệu từ Việc 5\n(đã có NaN sẵn)\n768 dòng × 9 cột", "#95a5a6"),
+    ("BƯỚC 1", "ZeroToMissingTransformer\n(0 → NaN - dự phòng dữ liệu mới)", "#3498db"),
+    ("BƯỚC 2", "SimpleImputer\n(Điền NaN bằng Median)", "#e67e22"),
+    ("BƯỚC 3", "StandardScaler\n(Chuẩn hóa mean=0, std=1)", "#9b59b6"),
+    ("BƯỚC 4", "RandomForestClassifier\n(Phân loại: Khỏe / Tiểu đường)", "#2ecc71"),
+    ("OUTPUT", "Dự đoán nhãn bệnh\n0 (Khỏe) hoặc 1 (Tiểu đường)", "#e74c3c"),
+]
+
+y_pos = 13
+box_height = 1.2
+box_width = 6
+x_center = 5
+
+for i, (title, desc, color) in enumerate(steps):
+    box = FancyBboxPatch(
+        (x_center - box_width/2, y_pos - box_height),
+        box_width, box_height,
+        boxstyle="round,pad=0.1",
+        facecolor=color, edgecolor='black', linewidth=2, alpha=0.85
+    )
+    ax.add_patch(box)
+
+    ax.text(x_center, y_pos - 0.3, title,
+            ha='center', va='center', fontsize=13, fontweight='bold', color='white')
+
+    ax.text(x_center, y_pos - 0.85, desc,
+            ha='center', va='center', fontsize=10, color='white')
+
+    if i < len(steps) - 1:
+        arrow = FancyArrowPatch(
+            (x_center, y_pos - box_height - 0.05),
+            (x_center, y_pos - box_height - 0.4),
+            arrowstyle='-|>', mutation_scale=25, linewidth=2, color='black'
+        )
+        ax.add_patch(arrow)
+
+    y_pos -= box_height + 0.5
+
+ax.text(5, 13.7, 'LUỒNG XỬ LÝ DỮ LIỆU (PIPELINE) CHO MODEL',
+        ha='center', va='center', fontsize=16, fontweight='bold')
+
+plt.tight_layout()
+plt.savefig('viet6_pipeline_diagram.png', dpi=200, bbox_inches='tight', facecolor='white')
+print("\n>>> Đã lưu sơ đồ pipeline: viet6_pipeline_diagram.png")
+plt.show()
+
+
+# ---- 1.6. Huấn luyện Pipeline ----
+print("\n>>> Huấn luyện Pipeline CHỈ trên tập Train...")
+preprocessing_pipeline.fit(X_train, y_train)
+print("Đã huấn luyện thành công!")
+
+
+# ==============================================================================
+# YÊU CẦU 2: TEST - KHÔNG CÒN GIÁ TRỊ 0 BẤT THƯỜNG SAU TRANSFORMER
+# ==============================================================================
+print("\n\n" + "="*70)
+print("   YÊU CẦU 2: TEST - KHÔNG CÒN GIÁ TRỊ 0 BẤT THƯỜNG SAU TRANSFORMER")
+print("="*70)
+
+# ---- 2.1. Kiểm tra trước khi transform ----
+print("\n[TRƯỚC KHI TRANSFORM]:")
+print("-"*60)
+zero_before_train = (X_train[zero_cols] == 0).sum()
+nan_before_train = X_train[zero_cols].isna().sum()
+print("Số giá trị 0 trong X_train (5 cột sinh lý):")
+print(zero_before_train.to_string())
+print(f"Tổng số 0 trong X_train: {zero_before_train.sum()}")
+print(f"\nSố giá trị NaN trong X_train (đã có từ Việc 5):")
+print(nan_before_train.to_string())
+print(f"Tổng số NaN trong X_train: {nan_before_train.sum()}")
+
+# ---- 2.2. Transform qua 3 bước đầu (chưa qua classifier) ----
+X_train_transformed = preprocessing_pipeline[:-1].transform(X_train)
+
+# ---- 2.3. Kiểm tra sau khi transform ----
+print("\n[SAU KHI TRANSFORM (qua ZeroToMissing + Imputer + Scaler)]:")
+print("-"*60)
+
+zero_after = (X_train_transformed == 0).sum().sum()
+nan_after = np.isnan(X_train_transformed).sum()
+
+print(f"  - Số giá trị 0 còn lại: {zero_after}")
+print(f"  - Số giá trị NaN còn lại: {nan_after}")
+print(f"  - Shape của X_train_transformed: {X_train_transformed.shape}")
+
+# ---- 2.4. TEST ASSERT ----
+print("\n[TEST ASSERT]:")
+print("-"*60)
+
+assert zero_after == 0, f"LỖI: Vẫn còn {zero_after} giá trị 0 sau transformer!"
+print(f"TEST 2A: Không còn giá trị 0 bất thường (zero_after = {zero_after}).")
+
+assert nan_after == 0, f"LỖI: Vẫn còn {nan_after} giá trị NaN sau transformer!"
+print(f"TEST 2B: Không còn NaN sau khi Imputer điền (nan_after = {nan_after}).")
+
+assert X_train_transformed.shape == X_train.shape, \
+    f"LỖI: Shape thay đổi từ {X_train.shape} thành {X_train_transformed.shape}!"
+print(f"TEST 2C: Shape giữ nguyên {X_train_transformed.shape}.")
+
+# ---- 2.5. Vẽ biểu đồ minh họa ----
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+# Biểu đồ 1: Số giá trị 0 trước transformer
+axes[0].bar(zero_before_train.index, zero_before_train.values,
+            color='#e74c3c', edgecolor='black', alpha=0.85)
+axes[0].set_title('1. TRƯỚC transformer:\nSố giá trị 0 ở 5 cột sinh lý',
+                  fontsize=12, fontweight='bold', pad=15)
+axes[0].set_ylabel('Số lượng giá trị 0', fontsize=11)
+axes[0].tick_params(axis='x', rotation=30)
+for i, v in enumerate(zero_before_train.values):
+    axes[0].text(i, v + 1, str(v), ha='center', fontweight='bold', fontsize=10)
+
+# Biểu đồ 2: Số giá trị 0 sau transformer
+zero_after_per_col = (X_train_transformed == 0).sum(axis=0)
+zero_cols_idx = [list(X_train.columns).index(c) for c in zero_cols]
+zero_after_5cols = zero_after_per_col[zero_cols_idx]
+
+axes[1].bar(range(len(zero_cols)), zero_after_5cols,
+            color='#2ecc71', edgecolor='black', alpha=0.85)
+axes[1].set_title('2. SAU transformer:\nSố giá trị 0 (phải = 0)',
+                  fontsize=12, fontweight='bold', pad=15)
+axes[1].set_ylabel('Số lượng giá trị 0', fontsize=11)
+axes[1].set_xticks(range(len(zero_cols)))
+axes[1].set_xticklabels(zero_cols, rotation=30)
+for i, v in enumerate(zero_after_5cols):
+    axes[1].text(i, v + 0.05, str(v), ha='center', fontweight='bold', fontsize=10, color='green')
+axes[1].set_ylim(-0.5, 3)
+
+# Biểu đồ 3: Tổng kết PASS/FAIL
+total_before = zero_before_train.sum()
+total_after = zero_after
+labels = ['Trước\ntransform', 'Sau\ntransform']
+values = [total_before, total_after]
+colors = ['#e74c3c', '#2ecc71']
+bars = axes[2].bar(labels, values, color=colors, edgecolor='black', width=0.5)
+axes[2].set_title('3. TỔNG KẾT:\nSố giá trị 0 trước/sau',
+                  fontsize=12, fontweight='bold', pad=15)
+axes[2].set_ylabel('Tổng số giá trị 0', fontsize=11)
+for bar, val in zip(bars, values):
+    axes[2].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(values)*0.02,
+                 str(val), ha='center', fontsize=13, fontweight='bold')
+axes[2].text(0.5, max(values)*0.5, 'PASS',
+             ha='center', fontsize=20, fontweight='bold', color='green',
+             bbox=dict(boxstyle='round,pad=0.5', facecolor='lightgreen', alpha=0.5))
+
+plt.tight_layout()
+plt.savefig('viet6_test_zero.png', dpi=200, bbox_inches='tight', facecolor='white')
+print("\n>>> Đã lưu biểu đồ: viet6_test_zero.png")
+plt.show()
+
+
+# ==============================================================================
+# YÊU CẦU 3: TEST - PIPELINE DỰ ĐOÁN ĐƯỢC DỮ LIỆU MỚI
+# ==============================================================================
+print("\n\n" + "="*70)
+print("   YÊU CẦU 3: TEST - PIPELINE DỰ ĐOÁN ĐƯỢC DỮ LIỆU MỚI")
+print("="*70)
+
+# ---- 3.1. Đánh giá trên tập Test ----
+y_pred = preprocessing_pipeline.predict(X_test)
+
+print("\n[ĐÁNH GIÁ TRÊN TẬP TEST]:")
+print("-"*60)
+print(f"  Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+print("\n  Classification Report:")
+print(classification_report(y_test, y_pred))
+
+# ---- 3.2. Demo dự đoán bệnh nhân mới (dữ liệu thô có giá trị 0) ----
+print("\n[DEMO DỰ ĐOÁN BỆNH NHÂN MỚI (dữ liệu thô có giá trị 0)]:")
+print("-"*60)
+
+new_patient = pd.DataFrame([{
+    'Pregnancies': 2,
+    'Glucose': 140,
+    'BloodPressure': 70,
+    'SkinThickness': 0,
+    'Insulin': 0,
+    'BMI': 30.5,
+    'DiabetesPedigreeFunction': 0.5,
+    'Age': 45
+}])
+
+print("Bệnh nhân mới (dữ liệu thô):")
+print(new_patient.to_string(index=False))
+
+pred_class = preprocessing_pipeline.predict(new_patient)
+pred_prob  = preprocessing_pipeline.predict_proba(new_patient)
+
+print(f"\nKết quả dự đoán:")
+print(f"  → Nhãn       : {'DƯƠNG TÍNH - Bị tiểu đường (1)' if pred_class[0] == 1 else 'ÂM TÍNH - Khỏe mạnh (0)'}")
+print(f"  → Xác suất   : {pred_prob[0][1]*100:.2f}% (tiểu đường)")
+
+# ---- 3.3. Demo nhiều bệnh nhân ----
+print("\n[DEMO NHIỀU BỆNH NHÂN]:")
+print("-"*60)
+
+patients = pd.DataFrame([
+    {'Pregnancies': 1, 'Glucose': 85,  'BloodPressure': 66, 'SkinThickness': 29, 'Insulin': 0,   'BMI': 26.6, 'DiabetesPedigreeFunction': 0.351, 'Age': 31},
+    {'Pregnancies': 8, 'Glucose': 183, 'BloodPressure': 64, 'SkinThickness': 0,  'Insulin': 0,   'BMI': 23.3, 'DiabetesPedigreeFunction': 0.672, 'Age': 32},
+    {'Pregnancies': 0, 'Glucose': 137, 'BloodPressure': 40, 'SkinThickness': 35, 'Insulin': 168, 'BMI': 43.1, 'DiabetesPedigreeFunction': 2.288, 'Age': 33},
+    {'Pregnancies': 3, 'Glucose': 78,  'BloodPressure': 50, 'SkinThickness': 32, 'Insulin': 88,  'BMI': 31.0, 'DiabetesPedigreeFunction': 0.248, 'Age': 26},
+])
+
+print("Thông tin 4 bệnh nhân mới:")
+print(patients.to_string(index=False))
+
+predictions = preprocessing_pipeline.predict(patients)
+probabilities = preprocessing_pipeline.predict_proba(patients)
+
+print("\nKết quả dự đoán:")
+print("-"*60)
+for i, (pred, prob) in enumerate(zip(predictions, probabilities), 1):
+    ket_qua = "DƯƠNG TÍNH (Bị tiểu đường)" if pred == 1 else "ÂM TÍNH (Khỏe mạnh)"
+    print(f"  Bệnh nhân {i}: {ket_qua:30s} (XS tiểu đường: {prob[1]*100:.2f}%)")
+
+# ---- 3.4. TEST ASSERT ----
+print("\n[TEST ASSERT]:")
+print("-"*60)
+
+assert pred_class is not None, "Pipeline không dự đoán được!"
+print("TEST 3A: Pipeline dự đoán được dữ liệu mới có giá trị 0.")
+
+assert abs(pred_prob[0].sum() - 1.0) < 1e-6, "Xác suất không hợp lệ!"
+print(f"TEST 3B: Xác suất hợp lệ (tổng = {pred_prob[0].sum():.4f}).")
+
+assert pred_class[0] in [0, 1], "Nhãn dự đoán không hợp lệ!"
+print(f"TEST 3C: Nhãn dự đoán hợp lệ ({pred_class[0]}).")
+
+assert len(predictions) == len(patients), "Batch prediction lỗi!"
+print(f"TEST 3D: Batch prediction OK ({len(predictions)} bệnh nhân).")
+
+# ---- 3.5. Confusion Matrix ----
+fig_cm, ax_cm = plt.subplots(figsize=(8, 6))
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Khỏe mạnh (0)', 'Tiểu đường (1)'])
+disp.plot(cmap='Blues', ax=ax_cm)
+ax_cm.set_title('Ma trận nhầm lẫn (Confusion Matrix)', fontsize=13, fontweight='bold', pad=15)
+fig_cm.tight_layout()
+fig_cm.savefig('viet6_confusion_matrix.png', dpi=200, bbox_inches='tight', facecolor='white')
+print("\n>>> Đã lưu: viet6_confusion_matrix.png")
+plt.show()
+
+
+# ==============================================================================
+# BẢNG TÓM TẮT KẾT QUẢ VIỆC 6
+# ==============================================================================
+print("\n" + "="*70)
+print("   BẢNG TÓM TẮT KẾT QUẢ VIỆC 6")
+print("="*70)
+
+result_table = pd.DataFrame({
+    'Yêu cầu': [
+        '1. Lên luồng xử lý dữ liệu cho model',
+        '2. Test: Không còn giá trị 0 bất thường sau transformer',
+        '3. Test: Pipeline dự đoán được dữ liệu mới'
+    ],
+    'Trạng thái': ['HOÀN THÀNH', 'PASS', 'PASS'],
+    'Chi tiết': [
+        'Pipeline 4 bước, nhận dữ liệu NaN từ Việc 5',
+        f'Số 0 còn lại = {zero_after}, Số NaN còn lại = {nan_after}',
+        f'Dự đoán OK cho cả 1 bệnh nhân và batch 4 bệnh nhân'
+    ]
+})
+
+display(result_table)

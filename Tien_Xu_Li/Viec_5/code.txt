@@ -1,0 +1,207 @@
+# ==============================================================================
+# VIỆC 5: ĐỔI 0 -> NaN Ở 5 CỘT SINH LÝ 
+# ==============================================================================
+
+import pandas as pd
+import numpy as np
+from google.colab import files
+import io
+import time
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+print("="*70)
+print("   VIỆC 5: ĐỔI 0 -> NaN Ở 5 CỘT SINH LÝ")
+print("="*70)
+
+
+# ==========================================
+# BƯỚC 1: UPLOAD VÀ ĐỌC FILE DỮ LIỆU
+# ==========================================
+print("\n>>> BƯỚC 1: Tải lên file 'pima-indians-diabetes.csv'...")
+uploaded = files.upload()
+filename = list(uploaded.keys())[0]
+
+lines = [line.decode('utf-8').strip().strip('"') for line in io.BytesIO(uploaded[filename]).readlines()]
+header = lines[0].split(',')
+data = [line.split(',') for line in lines[1:]]
+df = pd.DataFrame(data, columns=header)
+
+for col in df.columns:
+    df[col] = pd.to_numeric(df[col])
+
+print(f">>> Đã đọc: {df.shape[0]} dòng, {df.shape[1]} cột")
+
+
+# ==========================================
+# BƯỚC 2: ĐỔI 0 -> NaN 
+# ==========================================
+print("\n>>> BƯỚC 2: Đổi 0 -> NaN trên 5 cột sinh lý")
+print("-"*60)
+
+cols_to_convert = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+
+# Đếm số 0 TRƯỚC khi đổi
+missing_before = (df[cols_to_convert] == 0).sum()
+
+# Copy df gốc
+df_cleaned = df.copy()
+
+# Đổi 0 -> NaN (LƯU DƯỚI DẠNG NaN THẬT - KHÔNG dùng fillna("Missing"))
+df_cleaned[cols_to_convert] = df_cleaned[cols_to_convert].replace(0, np.nan)
+
+# Đếm số NaN SAU khi đổi
+missing_after = df_cleaned[cols_to_convert].isna().sum()
+
+# In bảng so sánh
+comparison = pd.DataFrame({
+    'Trước (số 0)': missing_before,
+    'Sau (số NaN)': missing_after,
+    'Tỷ lệ NaN (%)': (missing_after / len(df_cleaned) * 100).round(2)
+})
+comparison.index.name = 'Cột sinh lý'
+
+print("\n[BẢNG SO SÁNH TRƯỚC / SAU]:")
+display(comparison)
+print(f"Tổng số giá trị 0 ban đầu: {missing_before.sum()}")
+print(f"Tổng số giá trị NaN sau đổi: {missing_after.sum()}")
+
+
+# ==========================================
+# BƯỚC 3: KIỂM TRA (ASSERT) - ĐẢM BẢO ĐÚNG YÊU CẦU
+# ==========================================
+print("\n>>> BƯỚC 3: Chạy các bài TEST kiểm tra")
+print("="*60)
+
+# TEST 1: Không còn giá trị 0 ở 5 cột sinh lý
+assert (df_cleaned[cols_to_convert] == 0).sum().sum() == 0, \
+    "LỖI: Vẫn còn giá trị 0 ở 5 cột sinh lý!"
+print("  TEST 1: Không còn giá trị 0 ở 5 cột sinh lý.")
+
+# TEST 2: Số lượng NaN = Số lượng 0 ban đầu
+assert missing_after.sum() == missing_before.sum(), \
+    "LỖI: Số NaN ≠ số 0 ban đầu!"
+print(f" TEST 2: NaN ({missing_after.sum()}) = 0 ban đầu ({missing_before.sum()}).")
+
+# TEST 3: Cột Pregnancies GIỮ NGUYÊN giá trị 0
+n_preg_zero = (df_cleaned['Pregnancies'] == 0).sum()
+n_preg_zero_orig = (df['Pregnancies'] == 0).sum()
+assert n_preg_zero == n_preg_zero_orig, "❌ LỖI: Pregnancies bị đổi 0 -> NaN!"
+print(f"  TEST 3: Cột Pregnancies giữ nguyên {n_preg_zero} giá trị 0.")
+
+# TEST 4: Các cột khác không bị ảnh hưởng
+other_cols = ['Pregnancies', 'DiabetesPedigreeFunction', 'Age', 'Class']
+for col in other_cols:
+    assert df_cleaned[col].equals(df[col]), f"❌ LỖI: Cột {col} bị thay đổi!"
+print(f"  TEST 4: Các cột khác không đổi ({', '.join(other_cols)}).")
+
+# TEST 5: Số dòng không đổi
+assert len(df_cleaned) == len(df), "❌ LỖI: Số dòng thay đổi!"
+print(f"  TEST 5: Số dòng giữ nguyên ({len(df_cleaned)} dòng).")
+
+# TEST 6: Missing lưu dưới dạng NaN thật (không phải chuỗi "Missing")
+assert df_cleaned['Glucose'].dtype == 'float64', \
+    f"LỖI: Glucose không phải float64 (đang là {df_cleaned['Glucose'].dtype})!"
+assert pd.isna(df_cleaned['Glucose']).sum() > 0, \
+    "LỖI: Không có NaN thật trong cột Glucose!"
+print(f" TEST 6: Missing lưu dưới dạng NaN thật (dtype = {df_cleaned['Glucose'].dtype}).")
+
+print("\n" + "="*60)
+print(" TẤT CẢ 6 BÀI TEST ĐỀU PASS!")
+print("="*60)
+
+
+# ==========================================
+# BƯỚC 4: BẢNG QUYẾT ĐỊNH TIỀN XỬ LÝ
+# ==========================================
+print("\n>>> BƯỚC 4: Lập bảng quyết định tiền xử lý")
+print("-"*60)
+
+total_rows = len(df)
+
+decisions_data = [
+    {
+        'Tên Biến (Feature)': 'Pregnancies',
+        'Số Lượng 0': (df['Pregnancies'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['Pregnancies'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Hợp lệ (Chưa từng mang thai)',
+        'Quyết Định Tiền Xử Lý': 'GIỮ NGUYÊN (0)',
+        'Phương Pháp Xử Lý': 'Không can thiệp (giữ nguyên giá trị sinh học gốc)'
+    },
+    {
+        'Tên Biến (Feature)': 'Glucose',
+        'Số Lượng 0': (df['Glucose'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['Glucose'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Bất hợp lý (Lỗi đo đạc / Missing)',
+        'Quyết Định Tiền Xử Lý': 'ĐỔI 0 -> NaN',
+        'Phương Pháp Xử Lý': 'SimpleImputer(strategy="median")'
+    },
+    {
+        'Tên Biến (Feature)': 'BloodPressure',
+        'Số Lượng 0': (df['BloodPressure'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['BloodPressure'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Bất hợp lý (Lỗi đo đạc / Missing)',
+        'Quyết Định Tiền Xử Lý': 'ĐỔI 0 -> NaN',
+        'Phương Pháp Xử Lý': 'SimpleImputer(strategy="median")'
+    },
+    {
+        'Tên Biến (Feature)': 'SkinThickness',
+        'Số Lượng 0': (df['SkinThickness'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['SkinThickness'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Bất hợp lý (Lỗi đo đạc / Missing)',
+        'Quyết Định Tiền Xử Lý': 'ĐỔI 0 -> NaN',
+        'Phương Pháp Xử Lý': 'SimpleImputer(strategy="median")'
+    },
+    {
+        'Tên Biến (Feature)': 'Insulin',
+        'Số Lượng 0': (df['Insulin'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['Insulin'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Bất hợp lý (Lỗi đo đạc / Missing)',
+        'Quyết Định Tiền Xử Lý': 'ĐỔI 0 -> NaN',
+        'Phương Pháp Xử Lý': 'SimpleImputer(strategy="median")'
+    },
+    {
+        'Tên Biến (Feature)': 'BMI',
+        'Số Lượng 0': (df['BMI'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['BMI'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Bất hợp lý (Lỗi đo đạc / Missing)',
+        'Quyết Định Tiền Xử Lý': 'ĐỔI 0 -> NaN',
+        'Phương Pháp Xử Lý': 'SimpleImputer(strategy="median")'
+    },
+    {
+        'Tên Biến (Feature)': 'DiabetesPedigreeFunction',
+        'Số Lượng 0': (df['DiabetesPedigreeFunction'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['DiabetesPedigreeFunction'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Hợp lệ (Không có số 0)',
+        'Quyết Định Tiền Xử Lý': 'GIỮ NGUYÊN',
+        'Phương Pháp Xử Lý': 'Không cần xử lý'
+    },
+    {
+        'Tên Biến (Feature)': 'Age',
+        'Số Lượng 0': (df['Age'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['Age'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Hợp lệ (Không có số 0)',
+        'Quyết Định Tiền Xử Lý': 'GIỮ NGUYÊN',
+        'Phương Pháp Xử Lý': 'Không cần xử lý'
+    },
+    {
+        'Tên Biến (Feature)': 'Class',
+        'Số Lượng 0': (df['Class'] == 0).sum(),
+        'Tỷ Lệ 0 (%)': f"{((df['Class'] == 0).sum() / total_rows * 100):.2f}%",
+        'Bản Chất Giá Trị 0': 'Nhãn mục tiêu (0 = Khỏe mạnh)',
+        'Quyết Định Tiền Xử Lý': 'GIỮ NGUYÊN',
+        'Phương Pháp Xử Lý': 'Không can thiệp (nhãn phân loại chính)'
+    }
+]
+
+df_decision_table = pd.DataFrame(decisions_data)
+
+print("\n[BẢNG QUYẾT ĐỊNH TIỀN XỬ LÝ DỮ LIỆU]:")
+display(df_decision_table)
+
+
+
+
+
+

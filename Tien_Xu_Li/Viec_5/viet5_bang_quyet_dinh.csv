@@ -1,0 +1,10 @@
+﻿Tên Biến (Feature),Số Lượng 0,Tỷ Lệ 0 (%),Bản Chất Giá Trị 0,Quyết Định Tiền Xử Lý,Phương Pháp Xử Lý
+Pregnancies,111,14.45%,Hợp lệ (Chưa từng mang thai),GIỮ NGUYÊN (0),Không can thiệp (giữ nguyên giá trị sinh học gốc)
+Glucose,5,0.65%,Bất hợp lý (Lỗi đo đạc / Missing),ĐỔI 0 -> NaN,"SimpleImputer(strategy=""median"")"
+BloodPressure,35,4.56%,Bất hợp lý (Lỗi đo đạc / Missing),ĐỔI 0 -> NaN,"SimpleImputer(strategy=""median"")"
+SkinThickness,227,29.56%,Bất hợp lý (Lỗi đo đạc / Missing),ĐỔI 0 -> NaN,"SimpleImputer(strategy=""median"")"
+Insulin,374,48.70%,Bất hợp lý (Lỗi đo đạc / Missing),ĐỔI 0 -> NaN,"SimpleImputer(strategy=""median"")"
+BMI,11,1.43%,Bất hợp lý (Lỗi đo đạc / Missing),ĐỔI 0 -> NaN,"SimpleImputer(strategy=""median"")"
+DiabetesPedigreeFunction,0,0.00%,Hợp lệ (Không có số 0),GIỮ NGUYÊN,Không cần xử lý
+Age,0,0.00%,Hợp lệ (Không có số 0),GIỮ NGUYÊN,Không cần xử lý
+Class,500,65.10%,Nhãn mục tiêu (0 = Khỏe mạnh),GIỮ NGUYÊN,Không can thiệp (nhãn phân loại chính)
