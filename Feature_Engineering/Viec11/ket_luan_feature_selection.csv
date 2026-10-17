@@ -1,4 +1,4 @@
-﻿Phương_Pháp,Accuracy,Feature_Được_Chọn
-Không chọn (Giữ toàn bộ),0.7078,Tất cả
-f_classif (Chọn top 8),0.7338,"Glucose, SkinThickness, Insulin, BMI, Age, BMI_category_Normal, BMI_category_Obese, Age_group_Middle_Aged"
-mutual_info (Chọn top 8),0.7273,"Pregnancies, Glucose, Insulin, BMI, Age, BMI_category_Normal, BMI_category_Obese, Age_group_Middle_Aged"
+﻿Phương_Pháp,CV_Accuracy_Train,Feature_Được_Chọn
+Không chọn (Giữ toàn bộ),0.7915,Tất cả
+f_classif (Chọn top 8),0.7834,"Glucose, SkinThickness, Insulin, BMI, Age, BMI_category_Normal, BMI_category_Obese, Age_group_Middle_Aged"
+mutual_info (Chọn top 8),0.7817,"Pregnancies, Glucose, Insulin, BMI, Age, BMI_category_Overweight, BMI_category_Obese, Age_group_Middle_Aged"
