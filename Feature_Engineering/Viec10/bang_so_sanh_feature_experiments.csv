@@ -1,0 +1,6 @@
+﻿Tên_Thử_Nghiệm,Accuracy,Số_Lượng_Feature,Feature_Bị_Loại
+1. Baseline,0.7078,8,Không có
+2. Thêm Ratio,0.6883,9,Không có
+"3. Thêm Category (BMI, Age)",0.7208,13,Không có
+4. Tất cả Feature,0.7078,14,Không có
+5. Tất cả Feature (Loại SkinThickness),0.7078,13,SkinThickness
