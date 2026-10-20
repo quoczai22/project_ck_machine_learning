@@ -1,0 +1,11 @@
+﻿Noi_Dung,Gia_Tri
+Scenario duoc chon,2_Them_Ratio
+Model duoc chon,SVM (RBF)
+Class weight,balanced
+CV Recall,0.7947
+CV F1,0.6713
+CV ROC-AUC,0.8303
+CV Accuracy,0.7296
+So fold,5
+Du lieu chon model,TRAIN only
+Quy tac,"Dat rang buoc F1 va ROC-AUC; trong nhom hop le, uu tien Recall, tiep theo F1 va ROC-AUC."

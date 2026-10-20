@@ -1,0 +1,7 @@
+﻿Mo_Hinh,Class_Weight,CV_Accuracy,CV_Precision,CV_Recall,CV_F1,CV_ROC_AUC,Tham_So
+Logistic Regression,None,0.7670798347327735,0.7094139194139194,0.5842746400885935,0.6363400378292238,0.8458181063122924,"{""model__C"": 0.1, ""model__class_weight"": null, ""model__solver"": ""liblinear""}"
+Logistic Regression,balanced,0.7637878182060509,0.636141908233052,0.7663344407530455,0.693762950950487,0.8472840531561461,"{""model__C"": 0.1, ""model__class_weight"": ""balanced"", ""model__solver"": ""liblinear""}"
+Random Forest,None,0.7638278022124484,0.6863021374574648,0.6027685492801772,0.6402758217210935,0.8328225359911408,"{""model__class_weight"": null, ""model__max_depth"": 10, ""model__min_samples_leaf"": 3, ""model__n_estimators"": 300}"
+Random Forest,balanced,0.7638278022124483,0.6474488244674579,0.7147286821705425,0.6789714057470736,0.8294435215946845,"{""model__class_weight"": ""balanced"", ""model__max_depth"": 10, ""model__min_samples_leaf"": 1, ""model__n_estimators"": 300}"
+SVM (RBF),None,0.6645208583233373,0.7142857142857142,0.05149501661129567,0.09422222222222223,0.8455440199335549,"{""model__C"": 0.1, ""model__class_weight"": null, ""model__gamma"": 0.01}"
+SVM (RBF),balanced,0.7686791949886712,0.644394985047159,0.7664451827242524,0.6984469676374494,0.8499404761904762,"{""model__C"": 1.0, ""model__class_weight"": ""balanced"", ""model__gamma"": 0.01}"

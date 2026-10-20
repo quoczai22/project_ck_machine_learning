@@ -1,0 +1,46 @@
+{
+    "project_root": "C:\\HocMay\\Do_An_Hoc_May",
+    "dataset_path": "C:\\HocMay\\Do_An_Hoc_May\\Tien_Xu_Li\\Viec_5\\pima_indians_zero_as_missing_NaN.csv",
+    "output_dir": "C:\\HocMay\\Do_An_Hoc_May\\Model\\Viec15",
+    "target_column": "Class",
+    "random_state": 42,
+    "test_size": 0.2,
+    "n_splits": 5,
+    "cv_method": "StratifiedKFold",
+    "search_method": "GridSearchCV",
+    "scoring": [
+        "recall",
+        "f1",
+        "roc_auc",
+        "accuracy",
+        "precision"
+    ],
+    "selection_priority": "Recall",
+    "f1_tolerance": 0.03,
+    "roc_auc_tolerance": 0.03,
+    "class_weight_options": [
+        null,
+        "balanced"
+    ],
+    "scenarios": {
+        "1_Baseline": "8 feature goc",
+        "2_Them_Ratio": "Them Glucose_BMI_Ratio",
+        "3_Them_Category": "Them BMI/Age category",
+        "4_Tat_Ca_Feature": "Ratio va category va feature phu",
+        "5_Bo_SkinThickness": "Feature engineered, bo SkinThickness"
+    },
+    "models": [
+        "Logistic Regression",
+        "Random Forest",
+        "SVM (RBF)"
+    ],
+    "selected_scenario": "2_Them_Ratio",
+    "selected_model": "SVM (RBF)",
+    "selected_class_weight": "balanced",
+    "selected_params": {
+        "model__C": 0.1,
+        "model__class_weight": "balanced",
+        "model__gamma": "scale"
+    },
+    "selection_uses_test": false
+}

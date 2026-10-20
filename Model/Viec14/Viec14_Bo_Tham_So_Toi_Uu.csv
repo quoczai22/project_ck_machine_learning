@@ -1,0 +1,4 @@
+﻿Mo_Hinh,Best_Class_Weight,Best_CV_ROC_AUC,Best_Params
+Logistic Regression,balanced,0.8472840531561461,"{""model__C"": 0.1, ""model__class_weight"": ""balanced"", ""model__solver"": ""liblinear""}"
+Random Forest,None,0.8328225359911408,"{""model__class_weight"": null, ""model__max_depth"": 10, ""model__min_samples_leaf"": 3, ""model__n_estimators"": 300}"
+SVM (RBF),balanced,0.8499404761904762,"{""model__C"": 1.0, ""model__class_weight"": ""balanced"", ""model__gamma"": 0.01}"

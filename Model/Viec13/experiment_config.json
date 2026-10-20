@@ -1,0 +1,37 @@
+{
+    "dataset_path": "C:\\HocMay\\Do_An_Hoc_May\\Tien_Xu_Li\\Viec_5\\pima_indians_zero_as_missing_NaN.csv",
+    "target_column": "Class",
+    "random_state": 42,
+    "test_size": 0.2,
+    "train_rows": 614,
+    "test_rows": 154,
+    "original_features": [
+        "Pregnancies",
+        "Glucose",
+        "BloodPressure",
+        "SkinThickness",
+        "Insulin",
+        "BMI",
+        "DiabetesPedigreeFunction",
+        "Age"
+    ],
+    "zero_as_missing": [
+        "Glucose",
+        "BloodPressure",
+        "SkinThickness",
+        "Insulin",
+        "BMI"
+    ],
+    "models": [
+        "Logistic Regression",
+        "Random Forest",
+        "SVM"
+    ],
+    "scenarios": {
+        "1_Baseline": "8 feature goc",
+        "2_Them_Ratio": "Them Glucose_BMI_Ratio",
+        "3_Them_Category": "Them Ratio va Category BMI/Age",
+        "4_Tat_Ca_Feature": "Them Ratio va Category va feature phu",
+        "5_Bo_SkinThickness": "Feature engineered, bo SkinThickness"
+    }
+}

@@ -1,0 +1,43 @@
+{
+    "Tieu_de": "BIEN BAN CHON CANDIDATE MODEL - VIEC 15",
+    "Dataset": "C:\\HocMay\\Do_An_Hoc_May\\Tien_Xu_Li\\Viec_5\\pima_indians_zero_as_missing_NaN.csv",
+    "Target": "Class",
+    "Phuong_phap": "StratifiedKFold + GridSearchCV",
+    "So_Fold": 5,
+    "Du_Lieu_Chon_Model": "TRAIN only",
+    "Khong_Dung_Test_De_Chon_Model": true,
+    "Metric_Uu_Tien": "Recall",
+    "Rang_Buoc_F1": "CV_F1 >= F1_tot_nhat - 0.03",
+    "Rang_Buoc_ROC_AUC": "CV_ROC_AUC >= ROC_AUC_tot_nhat - 0.03",
+    "Nhanh_Class_Weight": [
+        "None",
+        "balanced"
+    ],
+    "Scenario_Da_Danh_Gia": [
+        "1_Baseline",
+        "2_Them_Ratio",
+        "3_Them_Category",
+        "4_Tat_Ca_Feature",
+        "5_Bo_SkinThickness"
+    ],
+    "Model_Da_Danh_Gia": [
+        "Logistic Regression",
+        "Random Forest",
+        "SVM (RBF)"
+    ],
+    "Scenario_Duoc_Chon": "2_Them_Ratio",
+    "Model_Duoc_Chon": "SVM (RBF)",
+    "Class_Weight_Duoc_Chon": "balanced",
+    "Best_Params": {
+        "model__C": 0.1,
+        "model__class_weight": "balanced",
+        "model__gamma": "scale"
+    },
+    "CV_Recall": 0.7946843853820599,
+    "CV_F1": 0.671303155769213,
+    "CV_ROC_AUC": 0.8303211517165006,
+    "CV_Accuracy": 0.7296414767426362,
+    "CV_Precision": 0.5835152756443078,
+    "Ly_Do_Chon": "Dat rang buoc F1 va ROC-AUC; trong nhom hop le, uu tien Recall, tiep theo F1 va ROC-AUC.",
+    "Ghi_Chu": "Khong su dung metric tren Test de chon candidate. Test chi duoc danh gia sau khi model da duoc chot."
+}

@@ -1,0 +1,44 @@
+{
+    "dataset": "C:\\HocMay\\Do_An_Hoc_May\\Tien_Xu_Li\\Viec_5\\pima_indians_zero_as_missing_NaN.csv",
+    "target": "Class",
+    "random_state": 42,
+    "test_size": 0.2,
+    "cv": "StratifiedKFold",
+    "n_splits": 5,
+    "shuffle": true,
+    "scoring": [
+        "accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "roc_auc"
+    ],
+    "refit_metric": "roc_auc",
+    "feature_scenario": "5_Bo_SkinThickness",
+    "features": [
+        "Pregnancies",
+        "Glucose",
+        "BloodPressure",
+        "Insulin",
+        "BMI",
+        "DiabetesPedigreeFunction",
+        "Age",
+        "Glucose_BMI_Ratio",
+        "Glucose_Insulin_Ratio",
+        "Age_BMI_Ratio",
+        "BMI_Category_Underweight",
+        "BMI_Category_Normal",
+        "BMI_Category_Overweight",
+        "BMI_Category_Obese",
+        "Age_Category_Young",
+        "Age_Category_Middle",
+        "Age_Category_Older"
+    ],
+    "class_weight_comparison": [
+        null,
+        "balanced"
+    ],
+    "smote_used": false,
+    "pipeline_imputer": "median",
+    "output_directory": "C:\\HocMay\\Do_An_Hoc_May\\Model\\Viec14"
+}
