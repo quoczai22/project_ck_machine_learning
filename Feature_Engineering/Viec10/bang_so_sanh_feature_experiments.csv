@@ -1,6 +1,6 @@
-﻿Tên_Thử_Nghiệm,CV_Accuracy_Train,Số_Lượng_Feature,Feature_Bị_Loại
-1. Baseline,0.7866,8,Không có
-2. Thêm Ratio,0.7915,9,Không có
-"3. Thêm Category (BMI, Age)",0.7948,13,Không có
-4. Tất cả Feature,0.7915,14,Không có
-5. Tất cả Feature (Loại SkinThickness),0.7915,13,SkinThickness
+﻿Tên_Thử_Nghiệm,Recall_Mean,Recall_Std,Feature_Bị_Loại
+1. Baseline,0.5748,0.0227,Không có
+2. Thêm Ratio,0.5936,0.026,Không có
+"3. Thêm Category (BMI, Age)",0.6074,0.0277,Không có
+4. Tất cả Feature,0.6123,0.049,Không có
+5. Tất cả (Loại SkinThickness),0.6215,0.0372,SkinThickness

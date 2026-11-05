@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.linear_model import LogisticRegression
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
@@ -7,66 +9,82 @@ from sklearn.pipeline import Pipeline
 import warnings
 warnings.filterwarnings('ignore')
 
-# 1. Đọc dữ liệu
 path_to_viec7 = '../../Tien_Xu_Li/Viec_7/'
 X_train_raw = pd.read_csv(f'{path_to_viec7}X_train.csv')
 y_train = pd.read_csv(f'{path_to_viec7}y_train.csv').squeeze()
+base_cols = X_train_raw.columns.tolist()
 
-# 2. Xử lý giá trị NaN
-imputer = SimpleImputer(strategy='median')
-X_train = pd.DataFrame(imputer.fit_transform(X_train_raw), columns=X_train_raw.columns)
+# LỚP TẠO FEATURE NẰM TRONG PIPELINE
+class FeatureEngineer(BaseEstimator, TransformerMixin):
+    def __init__(self, cols):
+        self.cols = cols
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        df = pd.DataFrame(X, columns=self.cols)
+        
+        safe_insulin = df['Insulin'].clip(lower=1e-6)
+        df['Glucose_to_Insulin_ratio'] = df['Glucose'] / safe_insulin
+        
+        # SỬA LỖI BMI: Dùng đúng 25.0 và 30.0 (right=False nghĩa là <25.0, <30.0)
+        bins_bmi = [0, 18.5, 25.0, 30.0, float('inf')]
+        bmi_labels = ['Underweight', 'Normal', 'Overweight', 'Obese']
+        df['BMI_category'] = pd.cut(df['BMI'], bins=bins_bmi, labels=bmi_labels, right=False)
+        
+        bins_age = [0, 35, 55, float('inf')]
+        age_labels = ['Young_Adults', 'Middle_Aged', 'Seniors']
+        df['Age_group'] = pd.cut(df['Age'], bins=bins_age, labels=age_labels, right=False)
+        
+        # Cố định categories để get_dummies không sinh lỗi khi chạy K-Fold
+        df['BMI_category'] = pd.Categorical(df['BMI_category'], categories=bmi_labels)
+        df['Age_group'] = pd.Categorical(df['Age_group'], categories=age_labels)
+        
+        return pd.get_dummies(df, columns=['BMI_category', 'Age_group'], drop_first=True)
 
-# 3. Hàm tạo Feature MỚI (Đã sửa lỗi chia 0)
-def apply_feature_engineering(df):
-    df_out = df.copy()
-    
-    # SỬA LỖI 3: Ép Insulin >= 1e-6 để chống chia 0 khi inference
-    safe_insulin = df_out['Insulin'].clip(lower=1e-6)
-    df_out['Glucose_to_Insulin_ratio'] = df_out['Glucose'] / safe_insulin
-    
-    bins_bmi = [0, 18.5, 24.9, 29.9, float('inf')]
-    df_out['BMI_category'] = pd.cut(df_out['BMI'], bins=bins_bmi, labels=['Underweight', 'Normal', 'Overweight', 'Obese'], right=False)
-    
-    bins_age = [0, 35, 55, float('inf')]
-    df_out['Age_group'] = pd.cut(df_out['Age'], bins=bins_age, labels=['Young_Adults', 'Middle_Aged', 'Seniors'], right=False)
-    
-    df_out = pd.get_dummies(df_out, columns=['BMI_category', 'Age_group'], drop_first=True)
-    return df_out
+# LỚP LỌC FEATURE THEO YÊU CẦU THỬ NGHIỆM
+class ColumnSelector(BaseEstimator, TransformerMixin):
+    def __init__(self, cols_to_keep):
+        self.cols_to_keep = cols_to_keep
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        if self.cols_to_keep == 'all':
+            return X
+        keep = [c for c in X.columns if c in self.cols_to_keep]
+        return X[keep]
 
-X_train_fe = apply_feature_engineering(X_train)
-
-# 4. Hàm chạy thử nghiệm (SỬA LỖI 1: Dùng CV trên Train, không chạm tới Test)
-def run_experiment(exp_name, train_data, feature_cols, removed_cols="Không có"):
-    X_tr = train_data[feature_cols]
-    
+# Hàm chạy thử nghiệm chuẩn Recall
+def run_experiment(exp_name, features_to_keep, removed_cols="Không có"):
     pipeline = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('fe', FeatureEngineer(cols=base_cols)),
+        ('selector', ColumnSelector(features_to_keep)),
         ('scaler', StandardScaler()),
         ('model', LogisticRegression(max_iter=1000, random_state=42))
     ])
     
-    # StratifiedKFold với 5 folds
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    scores = cross_val_score(pipeline, X_tr, y_train, cv=cv, scoring='accuracy')
+    scores = cross_val_score(pipeline, X_train_raw, y_train, cv=cv, scoring='recall')
     
     return {
         'Tên_Thử_Nghiệm': exp_name,
-        'CV_Accuracy_Train': round(scores.mean(), 4), # Lấy điểm trung bình của 5 folds
-        'Số_Lượng_Feature': len(feature_cols),
+        'Recall_Mean': round(scores.mean(), 4),
+        'Recall_Std': round(scores.std(), 4),
         'Feature_Bị_Loại': removed_cols
     }
 
-# 5. TIẾN HÀNH CÁC THỬ NGHIỆM
-experiments_log = []
-base_cols = X_train_raw.columns.tolist()
-cat_cols = [col for col in X_train_fe.columns if 'BMI_category' in col or 'Age_group' in col]
+# Lấy danh sách cột để thử nghiệm
+dummy_fe = FeatureEngineer(cols=base_cols)
+dummy_df = dummy_fe.transform(pd.DataFrame(np.zeros((1, len(base_cols))), columns=base_cols))
+cat_cols = [c for c in dummy_df.columns if 'BMI_category' in c or 'Age_group' in c]
+all_cols = dummy_df.columns.tolist()
 
-experiments_log.append(run_experiment("1. Baseline", X_train, base_cols))
-experiments_log.append(run_experiment("2. Thêm Ratio", X_train_fe, base_cols + ['Glucose_to_Insulin_ratio']))
-experiments_log.append(run_experiment("3. Thêm Category (BMI, Age)", X_train_fe, base_cols + cat_cols))
-all_cols = X_train_fe.columns.tolist()
-experiments_log.append(run_experiment("4. Tất cả Feature", X_train_fe, all_cols))
-exp5_cols = [col for col in all_cols if col != 'SkinThickness']
-experiments_log.append(run_experiment("5. Tất cả Feature (Loại SkinThickness)", X_train_fe, exp5_cols, "SkinThickness"))
+experiments_log = []
+experiments_log.append(run_experiment("1. Baseline", base_cols))
+experiments_log.append(run_experiment("2. Thêm Ratio", base_cols + ['Glucose_to_Insulin_ratio']))
+experiments_log.append(run_experiment("3. Thêm Category (BMI, Age)", base_cols + cat_cols))
+experiments_log.append(run_experiment("4. Tất cả Feature", 'all'))
+experiments_log.append(run_experiment("5. Tất cả (Loại SkinThickness)", [c for c in all_cols if c != 'SkinThickness'], "SkinThickness"))
 
 results_df = pd.DataFrame(experiments_log)
 print(results_df.to_string(index=False))
