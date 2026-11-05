@@ -55,7 +55,7 @@ def evaluate_selection(selector_name, selector_obj=None):
 results = []
 K_FEATURES = 8 
 
-# SỬA LỖI 2: Thêm random_state cho mutual_info_classif bằng partial
+#Thêm random_state cho mutual_info_classif bằng partial
 mi_scorer = partial(mutual_info_classif, random_state=42)
 
 results.append(evaluate_selection("Không chọn (Giữ toàn bộ)"))
@@ -65,3 +65,33 @@ results.append(evaluate_selection(f"mutual_info (Chọn top {K_FEATURES})", Sele
 df_results = pd.DataFrame(results)
 print(df_results.to_string(index=False))
 df_results.to_csv('ket_luan_feature_selection.csv', index=False, encoding='utf-8-sig')
+
+# =====================================================================
+# XUẤT DATASET THỰC TẾ CHO MODEL LEAD
+# =====================================================================
+
+print("\n--- ĐANG XUẤT TẬP DỮ LIỆU (DATASET) ĐỂ HUẤN LUYỆN ---")
+
+# 1. Nạp và xử lý tập Test (Dùng lại imputer đã học từ tập Train để lấp NaN)
+X_test_raw = pd.read_csv(f'{path_to_viec7}X_test.csv')
+X_test = pd.DataFrame(imputer.transform(X_test_raw), columns=X_test_raw.columns)
+
+# 2. Tạo feature mới cho tập Test
+X_test_fe = apply_feature_engineering(X_test)
+
+# 3. Sử dụng bộ lọc tốt nhất (f_classif với top 8) để cắt dữ liệu
+best_selector = SelectKBest(score_func=f_classif, k=K_FEATURES)
+best_selector.fit(X_train_fe, y_train)
+
+# Lấy tên các cột đã được thuật toán giữ lại
+selected_cols = X_train_fe.columns[best_selector.get_support()]
+
+# 4. Lọc DataFrame chỉ lấy các cột tốt nhất
+X_train_final = X_train_fe[selected_cols]
+X_test_final = X_test_fe[selected_cols]
+
+# 5. Lưu thành file CSV chứa data thực sự
+X_train_final.to_csv('X_train_selected.csv', index=False)
+X_test_final.to_csv('X_test_selected.csv', index=False)
+
+print(f"Đã tạo thành công 2 file dataset với {X_train_final.shape[1]} features!")
