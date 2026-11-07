@@ -1,6 +1,6 @@
-﻿Tên_Thử_Nghiệm,Recall_Mean,Recall_Std,Feature_Bị_Loại
-1. Baseline,0.5748,0.0227,Không có
-2. Thêm Ratio,0.5936,0.026,Không có
-"3. Thêm Category (BMI, Age)",0.6074,0.0277,Không có
-4. Tất cả Feature,0.6123,0.049,Không có
-5. Tất cả (Loại SkinThickness),0.6215,0.0372,SkinThickness
+﻿Tên_Thử_Nghiệm,Recall_Mean,Recall_Std,Accuracy_Mean,Feature_Bị_Loại
+1. Baseline,0.5748,0.0227,0.7882,Không có
+2. Thêm Ratio,0.5936,0.026,0.7915,Không có
+"3. Thêm Category (BMI, Age)",0.6074,0.0277,0.7931,Không có
+4. Tất cả Feature,0.6123,0.049,0.7899,Không có
+5. Tất cả (Loại SkinThickness),0.6215,0.0372,0.7947,SkinThickness

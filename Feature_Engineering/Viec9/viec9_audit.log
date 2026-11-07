@@ -1,0 +1,13 @@
+2026-11-07 10:47:09,756 - Viec9_Baseline - INFO - BẮT ĐẦU CÔNG VIỆC 9: THIẾT LẬP BASELINE (8 FEATURE GỐC)
+2026-11-07 10:47:09,756 - Viec9_Baseline - INFO - Đang đọc dữ liệu Train từ: ../../Tien_Xu_Li/Viec_7/
+2026-11-07 10:47:09,756 - Viec9_Baseline - INFO - Đã nạp thành công X_train với shape: (614, 8)
+2026-11-07 10:47:09,756 - Viec9_Baseline - INFO - Hành động: Đã cách ly hoàn toàn X_test và y_test theo yêu cầu chống rò rỉ dữ liệu.
+2026-11-07 10:47:09,756 - Viec9_Baseline - INFO - Khởi tạo Pipeline: SimpleImputer (median) -> StandardScaler -> LogisticRegression
+2026-11-07 10:47:09,756 - Viec9_Baseline - INFO - Bắt đầu chạy Stratified 5-Fold Cross-Validation trên tập Train...
+2026-11-07 10:47:09,865 - Viec9_Baseline - INFO - Hoàn thành CV. Metric chính [Recall]: 0.5748 ± 0.0227
+2026-11-07 10:47:09,865 - Viec9_Baseline - INFO - Hoàn thành CV. Metric phụ [Accuracy]: 0.7882 ± 0.0191
+2026-11-07 10:47:09,865 - Viec9_Baseline - INFO - Đang xuất bảng tổng hợp Metric CV...
+2026-11-07 10:47:09,865 - Viec9_Baseline - INFO - Đã xuất file: bang_metric_cv_baseline.csv
+2026-11-07 10:47:09,865 - Viec9_Baseline - INFO - Đang huấn luyện (fit) lại Pipeline trên toàn bộ X_train để lấy hệ số (weights)...
+2026-11-07 10:47:09,881 - Viec9_Baseline - INFO - Đã xuất file: bang_baseline_feature_set.csv
+2026-11-07 10:47:09,881 - Viec9_Baseline - INFO - HOÀN THÀNH CÔNG VIỆC 9.

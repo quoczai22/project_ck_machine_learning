@@ -1,23 +1,29 @@
 import pandas as pd
 import numpy as np
+import logging
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.linear_model import LogisticRegression
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 from functools import partial
 import joblib
 import warnings
 warnings.filterwarnings('ignore')
 
-path_to_viec7 = '../../Tien_Xu_Li/Viec_7/'
-X_train_raw = pd.read_csv(f'{path_to_viec7}X_train.csv')
-y_train = pd.read_csv(f'{path_to_viec7}y_train.csv').squeeze()
-base_cols = X_train_raw.columns.tolist()
+# THIẾT LẬP AUDIT LOG
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("viec11_audit.log", encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("Viec11_Selection")
 
-# Class FeatureEngineer giống y hệt Việc 10
 class FeatureEngineer(BaseEstimator, TransformerMixin):
     def __init__(self, cols):
         self.cols = cols
@@ -36,59 +42,75 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         df['Age_group'] = pd.Categorical(df['Age_group'], categories=age_labels)
         return pd.get_dummies(df, columns=['BMI_category', 'Age_group'], drop_first=True)
 
-def evaluate_selection(selector_name, selector_obj=None):
-    steps = [
-        ('imputer', SimpleImputer(strategy='median')),
-        ('fe', FeatureEngineer(cols=base_cols))
-    ]
-    if selector_obj is not None:
-        steps.append(('selector', selector_obj))
+def main():
+    logger.info("BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP CHỌN LỌC ĐẶC TRƯNG")
+    
+    path_to_viec7 = '../../Tien_Xu_Li/Viec_7/'
+    X_train_raw = pd.read_csv(f'{path_to_viec7}X_train.csv')
+    y_train = pd.read_csv(f'{path_to_viec7}y_train.csv').squeeze()
+    base_cols = X_train_raw.columns.tolist()
+
+    def evaluate_selection(selector_name, selector_obj=None):
+        logger.info(f"Đánh giá phương pháp: {selector_name}")
+        steps = [
+            ('imputer', SimpleImputer(strategy='median')),
+            ('fe', FeatureEngineer(cols=base_cols))
+        ]
+        if selector_obj is not None:
+            steps.append(('selector', selector_obj))
+            
+        steps.extend([
+            ('scaler', StandardScaler()),
+            ('model', LogisticRegression(max_iter=1000, random_state=42))
+        ])
         
-    steps.extend([
-        ('scaler', StandardScaler()),
-        ('model', LogisticRegression(max_iter=1000, random_state=42))
-    ])
-    
-    pipeline = Pipeline(steps)
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    scores = cross_val_score(pipeline, X_train_raw, y_train, cv=cv, scoring='recall')
-    
-    # Fit 1 lần để lấy danh sách tên feature
-    pipeline.fit(X_train_raw, y_train)
-    fe_columns = pipeline.named_steps['fe'].transform(pd.DataFrame(np.zeros((1, len(base_cols))), columns=base_cols)).columns
-    
-    if selector_obj is not None:
-        mask = pipeline.named_steps['selector'].get_support()
-        kept_features = ", ".join(fe_columns[mask].tolist())
-    else:
-        kept_features = "Tất cả"
+        pipeline = Pipeline(steps)
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=['recall', 'accuracy'])
         
-    return {
-        'Phương_Pháp': selector_name,
-        'Recall_Mean': round(scores.mean(), 4),
-        'Recall_Std': round(scores.std(), 4),
-        'Feature_Được_Chọn': kept_features,
-        'Pipeline': pipeline # Lưu lại để xuất file
-    }
+        # Fit 1 lần để lấy tên cột
+        pipeline.fit(X_train_raw, y_train)
+        fe_columns = pipeline.named_steps['fe'].transform(pd.DataFrame(np.zeros((1, len(base_cols))), columns=base_cols)).columns
+        
+        if selector_obj is not None:
+            mask = pipeline.named_steps['selector'].get_support()
+            kept_features = ", ".join(fe_columns[mask].tolist())
+        else:
+            kept_features = "Tất cả"
+            
+        return {
+            'Phương_Pháp': selector_name,
+            'Recall_Mean': round(cv_results['test_recall'].mean(), 4),
+            'Recall_Std': round(cv_results['test_recall'].std(), 4),
+            'Feature_Được_Chọn': kept_features,
+            'Pipeline': pipeline
+        }
 
-results = []
-K_FEATURES = 8 
-mi_scorer = partial(mutual_info_classif, random_state=42)
+    results = []
+    K_FEATURES = 8 
+    mi_scorer = partial(mutual_info_classif, random_state=42)
 
-res_all = evaluate_selection("Không chọn (Giữ toàn bộ)")
-res_f = evaluate_selection(f"f_classif (Chọn top {K_FEATURES})", SelectKBest(score_func=f_classif, k=K_FEATURES))
-res_mi = evaluate_selection(f"mutual_info (Chọn top {K_FEATURES})", SelectKBest(score_func=mi_scorer, k=K_FEATURES))
+    results.append(evaluate_selection("Không chọn (Giữ toàn bộ)"))
+    results.append(evaluate_selection(f"f_classif (Chọn top {K_FEATURES})", SelectKBest(score_func=f_classif, k=K_FEATURES)))
+    results.append(evaluate_selection(f"mutual_info (Chọn top {K_FEATURES})", SelectKBest(score_func=mi_scorer, k=K_FEATURES)))
 
-results.extend([res_all, res_f, res_mi])
-df_results = pd.DataFrame(results)
+    df_results = pd.DataFrame(results)
+    
+    # Tìm model có Recall cao nhất
+    best_idx = df_results['Recall_Mean'].idxmax()
+    best_pipeline = df_results.iloc[best_idx]['Pipeline']
+    best_method = df_results.iloc[best_idx]['Phương_Pháp']
+    
+    logger.info(f"Kết luận: Phương pháp tốt nhất là [{best_method}]")
+    
+    df_results.drop(columns=['Pipeline']).to_csv('ket_luan_feature_selection.csv', index=False, encoding='utf-8-sig')
+    
+    # BÀN GIAO PIPELINE DẠNG PICKLE
+    logger.info("Đang đóng gói Pipeline thành đối tượng .pkl để bàn giao...")
+    joblib.dump(best_pipeline, 'feature_pipeline_for_app.pkl')
+    logger.info("Đã xuất file: feature_pipeline_for_app.pkl")
+    
+    logger.info("HOÀN THÀNH CÔNG VIỆC 11.")
 
-# Tìm thuật toán tốt nhất theo Recall
-best_idx = df_results['Recall_Mean'].idxmax()
-best_pipeline = df_results.iloc[best_idx]['Pipeline']
-
-print(df_results.drop(columns=['Pipeline']).to_string(index=False))
-df_results.drop(columns=['Pipeline']).to_csv('ket_luan_feature_selection.csv', index=False, encoding='utf-8-sig')
-
-# LƯU PIPELINE MÔ HÌNH
-joblib.dump(best_pipeline, 'feature_pipeline_for_app.pkl')
-print("\nĐã xuất file feature_pipeline_for_app.pkl.")
+if __name__ == "__main__":
+    main()
