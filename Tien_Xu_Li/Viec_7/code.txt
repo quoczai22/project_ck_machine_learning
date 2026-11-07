@@ -1,0 +1,354 @@
+# ==============================================================================
+# VIỆC 7: TRAIN/TEST SPLIT (STRATIFY) + TEST KÍCH THƯỚC + KIỂM TRA ĐỘC LẬP
+# ==============================================================================
+
+import pandas as pd
+import numpy as np
+import io
+import time
+import matplotlib.pyplot as plt
+import seaborn as sns
+from google.colab import files
+from sklearn.model_selection import train_test_split
+
+print("="*70)
+print("TRAIN/TEST SPLIT + TEST KÍCH THƯỚC + KIỂM TRA ĐỘC LẬP")
+print("="*70)
+
+
+# ==============================================================================
+# BƯỚC 1: ĐỌC DỮ LIỆU ĐÃ XỬ LÝ NaN (TỪ VIỆC 5)
+# ==============================================================================
+print("\n>>> BƯỚC 1: Tải lên file 'pima_indians_zero_as_missing_NaN.csv'...")
+uploaded = files.upload()
+filename = list(uploaded.keys())[0]
+
+df = pd.read_csv(io.BytesIO(uploaded[filename]))
+print(f">>> Đã đọc: {df.shape[0]} dòng, {df.shape[1]} cột\n")
+
+
+# ==============================================================================
+# BƯỚC 2: TÁCH X - y VÀ CHIA TRAIN/TEST VỚI STRATIFY
+# ==============================================================================
+print(">>> BƯỚC 2: Tách X, y và chia Train/Test (80/20, stratify)")
+print("-"*60)
+
+X = df.drop(columns=['Class'])
+y = df['Class']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+print(f">>> Đã chia xong:")
+print(f"    Train: {len(X_train)} mẫu")
+print(f"    Test : {len(X_test)} mẫu\n")
+
+
+# ==============================================================================
+# BƯỚC 3: TEST - TRAIN/TEST ĐÚNG KÍCH THƯỚC (
+# ==============================================================================
+print("="*70)
+print("   PHẦN A: TEST KÍCH THƯỚC")
+print("="*70)
+
+total = len(X)
+
+# ---- TEST 1 ----
+print("\n[TEST 1]: Tổng Train + Test = Tổng dữ liệu gốc...")
+assert len(X_train) + len(X_test) == total, \
+    f"LỖI: Train({len(X_train)}) + Test({len(X_test)}) ≠ Tổng({total})!"
+print(f"PASS: {len(X_train)} + {len(X_test)} = {total}")
+
+# ---- TEST 2 ----
+print("\n[TEST 2]: y_train khớp X_train...")
+assert len(y_train) == len(X_train), \
+    f"LỖI: y_train({len(y_train)}) ≠ X_train({len(X_train)})!"
+print(f" PASS: y_train = X_train = {len(y_train)} mẫu")
+
+# ---- TEST 3 ----
+print("\n[TEST 3]: y_test khớp X_test...")
+assert len(y_test) == len(X_test), \
+    f"LỖI: y_test({len(y_test)}) ≠ X_test({len(X_test)})!"
+print(f" PASS: y_test = X_test = {len(y_test)} mẫu")
+
+# ---- TEST 4 ----
+print("\n[TEST 4]: Tỷ lệ Train ≈ 80%...")
+train_ratio = len(X_train) / total
+assert abs(train_ratio - 0.8) < 0.01, \
+    f"LỖI: Tỷ lệ Train = {train_ratio:.2%} (phải 80%)!"
+print(f"PASS: Tỷ lệ Train = {train_ratio:.2%}")
+
+# ---- TEST 5 ----
+print("\n[TEST 5]: Tỷ lệ Test ≈ 20%...")
+test_ratio = len(X_test) / total
+assert abs(test_ratio - 0.2) < 0.01, \
+    f"LỖI: Tỷ lệ Test = {test_ratio:.2%} (phải 20%)!"
+print(f"PASS: Tỷ lệ Test = {test_ratio:.2%}")
+
+# ---- TEST 6 ----
+print("\n[TEST 6]: Stratify giữ tỷ lệ lớp 0/1...")
+orig_class0 = (y == 0).sum() / len(y)
+train_class0 = (y_train == 0).sum() / len(y_train)
+test_class0 = (y_test == 0).sum() / len(y_test)
+
+assert abs(train_class0 - orig_class0) < 0.02, "❌ Tỷ lệ lớp 0 ở Train lệch!"
+assert abs(test_class0 - orig_class0) < 0.02, "❌ Tỷ lệ lớp 0 ở Test lệch!"
+print(f" PASS: Gốc={orig_class0:.2%}, Train={train_class0:.2%}, Test={test_class0:.2%}")
+
+
+# ==============================================================================
+# BƯỚC 4:- 5 BÀI TEST KIỂM TRA ĐỘC LẬP
+# ==============================================================================
+print("\n\n" + "="*70)
+print("   PHẦN B: TEST KIỂM TRA ĐỘC LẬP")
+print("="*70)
+
+# ---- TEST 7: Số cột Features giống nhau ----
+print("\n[TEST 7]: Số cột Features giống nhau giữa Train và Test...")
+assert X_train.shape[1] == X_test.shape[1], \
+    f"LỖI: X_train có {X_train.shape[1]} cột, X_test có {X_test.shape[1]} cột!"
+print(f"PASS: Cả 2 tập có {X_train.shape[1]} cột")
+
+# ---- TEST 8: Tên cột giống nhau ----
+print("\n[TEST 8]: Tên cột giống nhau giữa Train và Test...")
+assert list(X_train.columns) == list(X_test.columns), \
+    "LỖI: Tên cột giữa Train và Test không khớp!"
+print(f"PASS: Tên cột khớp: {list(X_train.columns)}")
+
+# ---- TEST 9: Chỉ số (index) không trùng nhau ----
+print("\n[TEST 9]: Chỉ số (index) không trùng giữa Train và Test...")
+train_idx = set(X_train.index)
+test_idx = set(X_test.index)
+overlap_idx = train_idx.intersection(test_idx)
+assert len(overlap_idx) == 0, \
+    f"LỖI: Có {len(overlap_idx)} chỉ số bị trùng giữa Train và Test!"
+print(f" PASS: Không có chỉ số trùng (Train={len(train_idx)}, Test={len(test_idx)})")
+
+# ---- TEST 10: Không có dòng dữ liệu trùng lặp ----
+print("\n[TEST 10]: Không có dòng dữ liệu trùng giữa Train và Test...")
+train_rows = set(map(tuple, X_train.values))
+test_rows = set(map(tuple, X_test.values))
+overlap_rows = train_rows.intersection(test_rows)
+assert len(overlap_rows) == 0, \
+    f"LỖI: Có {len(overlap_rows)} dòng dữ liệu trùng giữa Train và Test!"
+print(f"PASS: Không có dòng trùng lặp")
+
+# ---- TEST 11: Không có NaN trong nhãn ----
+print("\n[TEST 11]: Không có NaN trong nhãn (y_train, y_test)...")
+assert y_train.isna().sum() == 0, "❌ LỖI: Có NaN trong y_train!"
+assert y_test.isna().sum() == 0, "❌ LỖI: Có NaN trong y_test!"
+print(f"PASS: y_train và y_test không có NaN")
+
+# ---- TEST 12: Nhãn chỉ chứa giá trị 0 và 1 ----
+print("\n[TEST 12]: Nhãn chỉ chứa giá trị 0 và 1...")
+assert set(y_train.unique()).issubset({0, 1}), "❌ LỖI: y_train chứa giá trị khác 0/1!"
+assert set(y_test.unique()).issubset({0, 1}), "❌ LỖI: y_test chứa giá trị khác 0/1!"
+print(f"PASS: y_train={sorted(y_train.unique())}, y_test={sorted(y_test.unique())}")
+
+print("\n" + "="*70)
+print("TẤT CẢ 12 BÀI TEST ĐỀU PASS!")
+print("="*70)
+
+
+# ==============================================================================
+# BƯỚC 5: BẢNG BIÊN BẢN PHÂN TẦNG
+# ==============================================================================
+print("\n>>> BƯỚC 5: Bảng biên bản phân tầng")
+print("-"*60)
+
+summary_df = pd.DataFrame({
+    'Toàn bộ': y.value_counts().sort_index(),
+    'Train':   y_train.value_counts().sort_index(),
+    'Test':    y_test.value_counts().sort_index()
+})
+summary_df['Tỷ lệ Train (%)'] = (summary_df['Train'] / len(y_train)) * 100
+summary_df['Tỷ lệ Test (%)']  = (summary_df['Test']  / len(y_test))  * 100
+
+display(summary_df)
+
+
+# ==============================================================================
+# BƯỚC 6: BIỂU ĐỒ MINH HỌA (4 BIỂU ĐỒ)
+# ==============================================================================
+print("\n>>> BƯỚC 6: Vẽ biểu đồ minh họa")
+print("-"*60)
+
+sns.set_theme(style="whitegrid")
+fig = plt.figure(figsize=(18, 12))
+gs = fig.add_gridspec(2, 3, hspace=0.4, wspace=0.3)
+
+x_labels = ['Khỏe mạnh (0)', 'Bị tiểu đường (1)']
+width = 0.35
+indices = np.arange(len(x_labels))
+
+train_counts = y_train.value_counts().sort_index()
+test_counts = y_test.value_counts().sort_index()
+
+# --- Biểu đồ 1: Số lượng tuyệt đối ---
+ax1 = fig.add_subplot(gs[0, 0])
+ax1.bar(indices - width/2, train_counts, width,
+        label=f'Train ({len(X_train)} mẫu)', color='#3498db', edgecolor='black')
+ax1.bar(indices + width/2, test_counts, width,
+        label=f'Test ({len(X_test)} mẫu)', color='#e74c3c', edgecolor='black')
+ax1.set_title('1. So sánh số lượng mẫu tuyệt đối',
+              fontsize=12, fontweight='bold', pad=15)
+ax1.set_xticks(indices)
+ax1.set_xticklabels(x_labels)
+ax1.set_ylabel('Số lượng mẫu')
+ax1.legend()
+for i, (v1, v2) in enumerate(zip(train_counts.values, test_counts.values)):
+    ax1.text(i - width/2, v1 + 5, str(v1), ha='center', fontweight='bold', fontsize=10)
+    ax1.text(i + width/2, v2 + 5, str(v2), ha='center', fontweight='bold', fontsize=10)
+
+# --- Biểu đồ 2: Tỷ lệ % ---
+ax2 = fig.add_subplot(gs[0, 1])
+train_prop = y_train.value_counts(normalize=True).sort_index() * 100
+test_prop  = y_test.value_counts(normalize=True).sort_index() * 100
+
+ax2.bar(indices - width/2, train_prop, width,
+        label='Train (%)', color='#2ecc71', edgecolor='black')
+ax2.bar(indices + width/2, test_prop, width,
+        label='Test (%)', color='#f39c12', edgecolor='black')
+ax2.set_title('2. Tỷ lệ % phân bố (Kiểm chứng Stratify)',
+              fontsize=12, fontweight='bold', pad=15)
+ax2.set_xticks(indices)
+ax2.set_xticklabels(x_labels)
+ax2.set_ylabel('Tỷ lệ (%)')
+ax2.set_ylim(0, 100)
+ax2.legend()
+for i, (v1, v2) in enumerate(zip(train_prop.values, test_prop.values)):
+    ax2.text(i - width/2, v1 + 2, f'{v1:.1f}%', ha='center', fontweight='bold', fontsize=10)
+    ax2.text(i + width/2, v2 + 2, f'{v2:.1f}%', ha='center', fontweight='bold', fontsize=10)
+
+# --- Biểu đồ 3: Tổng quan kích thước ---
+ax3 = fig.add_subplot(gs[0, 2])
+sizes = [len(X_train), len(X_test)]
+labels_bar = [f'Train\n{len(X_train)} mẫu\n({train_ratio:.1%})',
+              f'Test\n{len(X_test)} mẫu\n({test_ratio:.1%})']
+colors_bar = ['#3498db', '#e74c3c']
+bars = ax3.bar(labels_bar, sizes, color=colors_bar, edgecolor='black', width=0.5)
+ax3.set_title('3. TỔNG QUAN: Kích thước Train/Test',
+              fontsize=12, fontweight='bold', pad=15)
+ax3.set_ylabel('Số lượng mẫu')
+for bar, val in zip(bars, sizes):
+    ax3.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 8,
+             str(val), ha='center', fontsize=13, fontweight='bold')
+
+# --- Biểu đồ 4: So sánh phân bố Glucose giữa Train và Test ---
+ax4 = fig.add_subplot(gs[1, 0])
+sns.kdeplot(data=X_train, x='Glucose', ax=ax4, label='Train',
+            color='#3498db', fill=True, alpha=0.4)
+sns.kdeplot(data=X_test, x='Glucose', ax=ax4, label='Test',
+            color='#e74c3c', fill=True, alpha=0.4)
+ax4.set_title('4. So sánh phân bố Glucose (Train vs Test)',
+              fontsize=12, fontweight='bold', pad=15)
+ax4.set_xlabel('Glucose')
+ax4.set_ylabel('Mật độ')
+ax4.legend()
+
+# --- Biểu đồ 5: So sánh phân bố BMI giữa Train và Test ---
+ax5 = fig.add_subplot(gs[1, 1])
+sns.kdeplot(data=X_train, x='BMI', ax=ax5, label='Train',
+            color='#3498db', fill=True, alpha=0.4)
+sns.kdeplot(data=X_test, x='BMI', ax=ax5, label='Test',
+            color='#e74c3c', fill=True, alpha=0.4)
+ax5.set_title('5. So sánh phân bố BMI (Train vs Test)',
+              fontsize=12, fontweight='bold', pad=15)
+ax5.set_xlabel('BMI')
+ax5.set_ylabel('Mật độ')
+ax5.legend()
+
+# --- Biểu đồ 6: Thanh PASS/FAIL 12 bài test ---
+ax6 = fig.add_subplot(gs[1, 2])
+test_names_short = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6',
+                    'T7', 'T8', 'T9', 'T10', 'T11', 'T12']
+test_status = [1]*12
+colors_status = ['#2ecc71']*12
+bars6 = ax6.barh(test_names_short, test_status, color=colors_status,
+                 edgecolor='black', height=0.6)
+ax6.set_xlim(0, 1.4)
+ax6.set_xticks([0, 1])
+ax6.set_xticklabels(['FAIL', 'PASS'], fontsize=11, fontweight='bold')
+ax6.set_title('6. TỔNG KẾT: 12 bài test',
+              fontsize=12, fontweight='bold', pad=15)
+for bar in bars6:
+    ax6.text(bar.get_width() + 0.03, bar.get_y() + bar.get_height()/2,
+             'PASS', va='center', fontsize=9, fontweight='bold', color='#27ae60')
+ax6.grid(axis='x', alpha=0.3)
+
+fig.suptitle('KIỂM TRA TRAIN/TEST SPLIT - 12/12 TEST PASS',
+             fontsize=15, fontweight='bold', color='#27ae60', y=0.98)
+
+fig.subplots_adjust(top=0.93, bottom=0.06, left=0.06, right=0.97)
+plt.savefig('viet7_kich_thuoc.png', dpi=200, bbox_inches='tight', facecolor='white')
+print("\n>>> Đã lưu: viet7_kich_thuoc.png")
+plt.show()
+
+
+# ==============================================================================
+# BƯỚC 7: XUẤT CÁC TẬP RA FILE CSV
+# ==============================================================================
+print("\n>>> BƯỚC 7: Xuất các tập Train/Test ra file CSV")
+print("-"*60)
+
+X_train.to_csv('X_train.csv', index=False)
+X_test.to_csv('X_test.csv',   index=False)
+y_train.to_csv('y_train.csv', index=False)
+y_test.to_csv('y_test.csv',   index=False)
+summary_df.to_csv('viet7_bien_ban_phan_tang.csv', encoding='utf-8-sig')
+
+print(" Đã lưu: X_train.csv")
+print(" Đã lưu: X_test.csv")
+print(" Đã lưu: y_train.csv")
+print(" Đã lưu: y_test.csv")
+print(" Đã lưu: viet7_bien_ban_phan_tang.csv")
+
+
+# ==============================================================================
+# BƯỚC 8: BẢNG TÓM TẮT KẾT QUẢ VIỆC 7 (12 BÀI TEST)
+# ==============================================================================
+print("\n" + "="*70)
+print("   BẢNG TÓM TẮT KẾT QUẢ VIỆC 7")
+print("="*70)
+
+result_table = pd.DataFrame({
+    'Bài kiểm tra': [
+        'PHẦN A - KÍCH THƯỚC:',
+        '  1. Tổng Train + Test = Tổng dữ liệu',
+        '  2. y_train khớp X_train',
+        '  3. y_test khớp X_test',
+        '  4. Tỷ lệ Train ≈ 80%',
+        '  5. Tỷ lệ Test ≈ 20%',
+        '  6. Stratify giữ tỷ lệ lớp 0/1',
+        'PHẦN B - ĐỘC LẬP:',
+        '  7. Số cột Features giống nhau',
+        '  8. Tên cột giống nhau',
+        '  9. Chỉ số index không trùng',
+        '  10. Không có dòng dữ liệu trùng',
+        '  11. Không có NaN trong nhãn',
+        '  12. Nhãn chỉ chứa 0 và 1'
+    ],
+    'Trạng thái': ['---']*7 + ['---'] + ['PASS']*6,
+    'Chi tiết': [
+        '',
+        f'{len(X_train)} + {len(X_test)} = {total}',
+        f'y_train = X_train = {len(y_train)}',
+        f'y_test = X_test = {len(y_test)}',
+        f'{train_ratio:.2%}',
+        f'{test_ratio:.2%}',
+        f'Train={train_class0:.2%}, Test={test_class0:.2%}',
+        '',
+        f'Cả 2 tập: {X_train.shape[1]} cột',
+        f'Tên cột khớp hoàn toàn',
+        f'Overlap = {len(overlap_idx)}',
+        f'Overlap = {len(overlap_rows)}',
+        'y_train, y_test: 0 NaN',
+        'Chỉ chứa {0, 1}'
+    ]
+})
+
+display(result_table)

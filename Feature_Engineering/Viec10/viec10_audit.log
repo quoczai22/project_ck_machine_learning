@@ -1,0 +1,9 @@
+2026-11-07 10:54:50,087 - Viec10_Experiments - INFO - BẮT ĐẦU CÔNG VIỆC 10: THỬ NGHIỆM FEATURE MỚI
+2026-11-07 10:54:50,087 - Viec10_Experiments - INFO - Khởi tạo cấu trúc Pipeline: Imputer -> FeatureEngineer -> Selector -> Scaler -> Model
+2026-11-07 10:54:50,103 - Viec10_Experiments - INFO - Đang chạy thử nghiệm: 1. Baseline
+2026-11-07 10:54:50,181 - Viec10_Experiments - INFO - Đang chạy thử nghiệm: 2. Thêm Ratio
+2026-11-07 10:54:50,275 - Viec10_Experiments - INFO - Đang chạy thử nghiệm: 3. Thêm Category (BMI, Age)
+2026-11-07 10:54:50,368 - Viec10_Experiments - INFO - Đang chạy thử nghiệm: 4. Tất cả Feature
+2026-11-07 10:54:50,462 - Viec10_Experiments - INFO - Đang chạy thử nghiệm: 5. Tất cả (Loại SkinThickness)
+2026-11-07 10:54:50,571 - Viec10_Experiments - INFO - Hoàn thành xuất file báo cáo so sánh.
+2026-11-07 10:54:50,571 - Viec10_Experiments - INFO - HOÀN THÀNH CÔNG VIỆC 10.

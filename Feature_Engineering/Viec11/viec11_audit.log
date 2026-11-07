@@ -1,0 +1,8 @@
+2026-11-07 10:55:25,709 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP CHỌN LỌC ĐẶC TRƯNG
+2026-11-07 10:55:25,725 - Viec11_Selection - INFO - Đánh giá phương pháp: Không chọn (Giữ toàn bộ)
+2026-11-07 10:55:25,850 - Viec11_Selection - INFO - Đánh giá phương pháp: f_classif (Chọn top 8)
+2026-11-07 10:55:25,944 - Viec11_Selection - INFO - Đánh giá phương pháp: mutual_info (Chọn top 8)
+2026-11-07 10:55:26,194 - Viec11_Selection - INFO - Kết luận: Phương pháp tốt nhất là [Không chọn (Giữ toàn bộ)]
+2026-11-07 10:55:26,194 - Viec11_Selection - INFO - Đang đóng gói Pipeline thành đối tượng .pkl để bàn giao cho App/Model Lead...
+2026-11-07 10:55:26,209 - Viec11_Selection - INFO - Đã xuất file: feature_pipeline_for_app.pkl
+2026-11-07 10:55:26,209 - Viec11_Selection - INFO - HOÀN THÀNH CÔNG VIỆC 11.
