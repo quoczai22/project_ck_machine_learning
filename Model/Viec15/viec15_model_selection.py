@@ -1,4 +1,4 @@
-﻿
+
 # ============================================================
 # VIEC 15 - CHON CANDIDATE MODEL BANG CROSS-VALIDATION
 # StratifiedKFold + GridSearchCV
@@ -517,7 +517,7 @@ MODEL_CONFIGS = {
             ("imputer", SimpleImputer(strategy="median")),
             ("model", RandomForestClassifier(
                 random_state=RANDOM_STATE,
-                n_jobs=-1,
+                n_jobs=1,
             )),
         ]),
         "param_grid": {
@@ -673,7 +673,7 @@ for scenario, description in SCENARIOS.items():
             scoring=SCORING,
             refit=refit_recall_with_constraints,
             cv=cv,
-            n_jobs=-1,
+            n_jobs=1,
             verbose=0,
             return_train_score=False,
             error_score="raise",
@@ -1142,6 +1142,10 @@ test_metrics = {
 
 # Ghi rieng de tranh nham lan voi ket qua CV.
 pd.DataFrame([test_metrics]).to_csv(
+    OUTPUT_DIR / "Viec15_Final_Test_Evaluation_After_Selection.csv",
+    index=False,
+    encoding="utf-8-sig",
+)
 
 # ============================================================
 # PHAN TICH CACH LAY NHAN SVM: predict() vs predict_proba >= 0.5
@@ -1180,10 +1184,6 @@ print(f"Ly do: class_weight='balanced' tich hop trong le margin giup dat Recall 
 print(f"Neu ep proba >= 0.5 se lam Recall roi xuong con {recall_score(y_test, y_test_pred_proba_05):.2%}, bo sot nghiem trong ca benh.")
 
 svm_label_comparison.to_csv(OUTPUT_DIR / "Viec15_So_Sanh_SVM_Predict_vs_Proba.csv", index=False, encoding="utf-8-sig")
-    OUTPUT_DIR / "Viec15_Final_Test_Evaluation_After_Selection.csv",
-    index=False,
-    encoding="utf-8-sig",
-)
 
 # Classification report tren Test sau khi chot model
 test_report = classification_report(

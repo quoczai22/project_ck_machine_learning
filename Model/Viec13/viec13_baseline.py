@@ -1,9 +1,9 @@
-﻿
 # ============================================================
-# VIEC 13 - BASELINE MODEL EVALUATION
-# Logistic Regression | Random Forest | SVM
+# VIEC 13 - BASELINE MODEL EVALUATION (TRAIN ONLY - 5-FOLD CV)
+# Logistic Regression | Random Forest | SVM | DummyClassifier
 # Dataset: Pima Indians Diabetes
-# Chay truc tiep trong EDA.ipynb - khong dung __file__
+# PHUONG PHAP: Stratified 5-Fold Cross-Validation tren tap TRAIN
+# TUYET DOI KHONG DUNG TAP TEST DE DANH GIA HOAC CHON FEATURE
 # ============================================================
 
 import os
@@ -15,8 +15,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import joblib
-
-from IPython.display import display
 
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split, StratifiedKFold
@@ -32,13 +30,11 @@ from sklearn.metrics import (
     accuracy_score,
     precision_score,
     recall_score,
-    average_precision_score,
     f1_score,
     roc_auc_score,
+    average_precision_score,
     classification_report,
     confusion_matrix,
-    ConfusionMatrixDisplay,
-    RocCurveDisplay
 )
 
 warnings.filterwarnings("ignore")
@@ -50,6 +46,7 @@ warnings.filterwarnings("ignore")
 
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
+N_SPLITS = 5
 
 try:
     CURRENT_DIR = Path(__file__).resolve().parent
@@ -60,7 +57,6 @@ except NameError:
 def find_project_root(start):
     """
     Tim thu muc goc co Feature_Engineering hoac Model.
-    Ho tro notebook dat trong project hoac cac thu muc con.
     """
     for p in [start, *start.parents]:
         if (
@@ -73,21 +69,7 @@ def find_project_root(start):
 
 
 PROJECT_ROOT = find_project_root(CURRENT_DIR)
-
-# Thu muc output uu tien theo cau truc project trong anh
-OUTPUT_CANDIDATES = [
-    PROJECT_ROOT / "Model" / "Tien_Xu_Li" / "Viec13",
-    PROJECT_ROOT / "Model" / "Viec13",
-    PROJECT_ROOT / "Tien_Xu_Li" / "Viec13",
-]
-
-# Neu Viec13 da ton tai thi dung no.
-# Neu chua co, tao tai vi tri dau tien.
-OUTPUT_DIR = next(
-    (p for p in OUTPUT_CANDIDATES if p.is_dir()),
-    OUTPUT_CANDIDATES[0]
-)
-
+OUTPUT_DIR = PROJECT_ROOT / "Model" / "Viec13"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 MODEL_DIR = OUTPUT_DIR / "models"
@@ -97,31 +79,17 @@ MODEL_DIR.mkdir(parents=True, exist_ok=True)
 PLOT_DIR.mkdir(parents=True, exist_ok=True)
 
 print("=" * 70)
-print("VIEC 13 - BASELINE MODEL EVALUATION")
+print("VIEC 13 - BASELINE MODEL EVALUATION (TRAIN ONLY - 5-FOLD CV)")
 print("=" * 70)
-print("Notebook directory:", CURRENT_DIR)
 print("Project root:", PROJECT_ROOT)
 print("Output directory:", OUTPUT_DIR)
 
 
 # ============================================================
-# 2. TIM FILE DATASET
+# 2. TIM VA DOC FILE DATASET
 # ============================================================
 
-DATASET_NAMES = [
-    "pima-indians-diabetes.csv",
-    "diabetes.csv",
-    "pima.csv",
-]
-
-
 def read_csv_robust(path):
-    """
-    Thu doc CSV bang cach tu phat hien separator.
-    Neu khong thanh cong thi thu cac separator pho bien.
-    """
-    errors = []
-
     for kwargs in [
         {"sep": None, "engine": "python"},
         {"sep": ","},
@@ -130,30 +98,11 @@ def read_csv_robust(path):
     ]:
         try:
             data = pd.read_csv(path, **kwargs)
-
-            # Neu header bi gom thanh mot cot co dau phay
-            if data.shape[1] == 1:
-                first_col = str(data.columns[0])
-
-                if "," in first_col:
-                    retry = pd.read_csv(path, sep=",")
-                    if retry.shape[1] > 1:
-                        return retry
-
-                if ";" in first_col:
-                    retry = pd.read_csv(path, sep=";")
-                    if retry.shape[1] > 1:
-                        return retry
-
             if data.shape[1] > 1:
                 return data
-
-        except Exception as exc:
-            errors.append(str(exc))
-
-    raise ValueError(
-        f"Khong doc duoc file CSV: {path}\n{errors}"
-    )
+        except Exception:
+            continue
+    raise ValueError(f"Khong doc duoc file CSV: {path}")
 
 
 def normalize_column_name(name):
@@ -168,131 +117,33 @@ def normalize_column_name(name):
 
 
 def find_dataset():
-    """
-    Tim dataset Pima trong project.
-    Khong su dung file tong hop ket qua cua Viec9.
-    """
-
-    # Uu tien cac vi tri thuong gap
     preferred = [
-        PROJECT_ROOT / "Model" / "Tien_Xu_Li"
-        / "pima-indians-diabetes.csv",
-
-        PROJECT_ROOT / "Model"
-        / "pima-indians-diabetes.csv",
-
-        PROJECT_ROOT / "Model" / "Tien_Xu_Li"
-        / "Viec6" / "pima-indians-diabetes.csv",
-
-        PROJECT_ROOT / "Feature_Engineering"
-        / "Viec9" / "pima-indians-diabetes.csv",
-
-        PROJECT_ROOT / "Feature_Engineering"
-        / "Viec9" / "bang_baseline_feature_set.csv",
+        PROJECT_ROOT / "Tien_Xu_Li" / "Viec_5" / "pima_indians_zero_as_missing_NaN.csv",
+        PROJECT_ROOT / "Tien_Xu_Li" / "pima-indians-diabetes.csv",
+        PROJECT_ROOT / "Model" / "Tien_Xu_Li" / "pima-indians-diabetes.csv",
+        PROJECT_ROOT / "Model" / "pima-indians-diabetes.csv",
     ]
-
     for path in preferred:
         if path.is_file():
-            try:
-                sample = read_csv_robust(path)
-                cols = {
-                    normalize_column_name(c)
-                    for c in sample.columns
-                }
+            return path
 
-                target_exists = bool(
-                    cols.intersection(
-                        {"class", "outcome", "diabetes", "target"}
-                    )
-                )
-
-                if target_exists and len(cols) >= 5:
-                    return path
-            except Exception:
-                continue
-
-    excluded_dirs = {
-        ".git",
-        ".venv",
-        "venv",
-        "__pycache__",
-        "models",
-        "plots",
-        ".ipynb_checkpoints",
-    }
-
-    # Tim trong project
     for root in [PROJECT_ROOT, CURRENT_DIR]:
-        if not root.exists():
-            continue
-
         for path in root.rglob("*.csv"):
-
-            if any(
-                part.lower() in excluded_dirs
-                for part in path.parts
-            ):
+            if any(part.lower() in {".git", ".venv", "venv", "__pycache__"} for part in path.parts):
                 continue
+            cols = {normalize_column_name(c) for c in pd.read_csv(path, nrows=2).columns}
+            if "glucose" in cols and "bmi" in cols and bool(cols.intersection({"class", "outcome", "target"})):
+                return path
 
-            try:
-                sample = read_csv_robust(path)
-
-                cols = {
-                    normalize_column_name(c)
-                    for c in sample.columns
-                }
-
-                has_glucose = "glucose" in cols
-                has_bmi = "bmi" in cols
-                has_target = bool(
-                    cols.intersection(
-                        {"class", "outcome", "diabetes", "target"}
-                    )
-                )
-
-                if has_glucose and has_bmi and has_target:
-                    return path
-
-            except Exception:
-                continue
-
-    raise FileNotFoundError(
-        "Khong tim thay dataset Pima Indians Diabetes.\n"
-        "Hay kiem tra file CSV trong project, "
-        "dac biet la pima-indians-diabetes.csv."
-    )
+    raise FileNotFoundError("Khong tim thay dataset Pima Indians Diabetes.")
 
 
 DATA_PATH = find_dataset()
-
 df = read_csv_robust(DATA_PATH)
-
-# Chuan hoa ten cot
-df.columns = [
-    str(c).strip().replace("\ufeff", "")
-    for c in df.columns
-]
+df.columns = [str(c).strip().replace("\ufeff", "") for c in df.columns]
 
 print("\nDataset duoc su dung:", DATA_PATH)
 print("Kich thuoc ban dau:", df.shape)
-print("Cac cot ban dau:", df.columns.tolist())
-
-# Neu van con mot cot gom tat ca ten truong
-if df.shape[1] == 1 and "," in str(df.columns[0]):
-    df = pd.read_csv(DATA_PATH, sep=",")
-    df.columns = [
-        str(c).strip().replace("\ufeff", "")
-        for c in df.columns
-    ]
-
-print("Kich thuoc sau khi doc:", df.shape)
-print("Cac cot sau khi doc:", df.columns.tolist())
-
-if df.shape[1] < 2:
-    raise ValueError(
-        "CSV van chi co mot cot. "
-        "Hay kiem tra delimiter va noi dung file."
-    )
 
 
 # ============================================================
@@ -300,129 +151,69 @@ if df.shape[1] < 2:
 # ============================================================
 
 rename_map = {}
+aliases = {
+    "pregnancies": "Pregnancies",
+    "glucose": "Glucose",
+    "bloodpressure": "BloodPressure",
+    "blood_pressure": "BloodPressure",
+    "skinthickness": "SkinThickness",
+    "skin_thickness": "SkinThickness",
+    "insulin": "Insulin",
+    "bmi": "BMI",
+    "diabetespedigreefunction": "DiabetesPedigreeFunction",
+    "diabetes_pedigree_function": "DiabetesPedigreeFunction",
+    "age": "Age",
+    "class": "Class",
+    "outcome": "Outcome",
+    "diabetes": "Diabetes",
+    "target": "Target",
+}
 
 for col in df.columns:
-    normalized = normalize_column_name(col)
-
-    aliases = {
-        "pregnancies": "Pregnancies",
-        "glucose": "Glucose",
-        "bloodpressure": "BloodPressure",
-        "blood_pressure": "BloodPressure",
-        "skinthickness": "SkinThickness",
-        "skin_thickness": "SkinThickness",
-        "insulin": "Insulin",
-        "bmi": "BMI",
-        "diabetespedigreefunction": "DiabetesPedigreeFunction",
-        "diabetes_pedigree_function": "DiabetesPedigreeFunction",
-        "age": "Age",
-        "class": "Class",
-        "outcome": "Outcome",
-        "diabetes": "Diabetes",
-        "target": "Target",
-    }
-
-    if normalized in aliases:
-        rename_map[col] = aliases[normalized]
+    norm = normalize_column_name(col)
+    if norm in aliases:
+        rename_map[col] = aliases[norm]
 
 df = df.rename(columns=rename_map)
 
-TARGET_CANDIDATES = [
-    "Class",
-    "Outcome",
-    "Diabetes",
-    "Target",
-]
-
-TARGET_COL = next(
-    (c for c in TARGET_CANDIDATES if c in df.columns),
-    None
-)
+TARGET_CANDIDATES = ["Class", "Outcome", "Diabetes", "Target"]
+TARGET_COL = next((c for c in TARGET_CANDIDATES if c in df.columns), None)
 
 if TARGET_COL is None:
-    raise ValueError(
-        "Khong tim thay cot nhan Class/Outcome/Diabetes/Target.\n"
-        f"Cac cot hien co: {df.columns.tolist()}"
-    )
+    raise ValueError("Khong tim thay cot nhan.")
 
 BASE_FEATURES = [
-    "Pregnancies",
-    "Glucose",
-    "BloodPressure",
-    "SkinThickness",
-    "Insulin",
-    "BMI",
-    "DiabetesPedigreeFunction",
-    "Age",
+    "Pregnancies", "Glucose", "BloodPressure", "SkinThickness",
+    "Insulin", "BMI", "DiabetesPedigreeFunction", "Age",
 ]
 
-missing_cols = [
-    col for col in BASE_FEATURES
-    if col not in df.columns
-]
-
-if missing_cols:
-    raise ValueError(
-        f"Dataset thieu cac cot: {missing_cols}\n"
-        f"Cac cot hien co: {df.columns.tolist()}"
-    )
-
-# Chuyen du lieu thanh numeric
 for col in BASE_FEATURES + [TARGET_COL]:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
-# Bo dong khong co nhan
 df = df.dropna(subset=[TARGET_COL]).copy()
-
-# Nhan nhi phan 0 va 1
 df = df[df[TARGET_COL].isin([0, 1])].copy()
 df[TARGET_COL] = df[TARGET_COL].astype(int)
-
-# Chi su dung cac cot can thiet
 df = df[BASE_FEATURES + [TARGET_COL]].copy()
 
-print("\nCot target:", TARGET_COL)
-print("Kich thuoc dataset:", df.shape)
-print("\nPhan bo target:")
+print("Cot target:", TARGET_COL)
+print("Phan bo target toan bo dataset:")
 print(df[TARGET_COL].value_counts().sort_index())
 
 
 # ============================================================
-# 4. XU LY CAC GIA TRI 0 BAT THUONG
+# 4. XU LY CAC GIA TRI 0 BAT THUONG THEO QUY UOC PIMA
 # ============================================================
 
-# Theo quy uoc bo du lieu Pima:
-# 0 o cac cot nay duoc xem la gia tri thieu bat thuong.
-# Pregnancies = 0 van la gia tri hop le.
-
-ZERO_AS_MISSING = [
-    "Glucose",
-    "BloodPressure",
-    "SkinThickness",
-    "Insulin",
-    "BMI",
-]
-
+ZERO_AS_MISSING = ["Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"]
 for col in ZERO_AS_MISSING:
     df.loc[df[col] == 0, col] = np.nan
 
-# Luu thong tin dataset
-df.describe().to_csv(
-    OUTPUT_DIR / "dataset_summary.csv",
-    encoding="utf-8-sig"
-)
-
-df.isna().sum().rename("Missing_Count").to_csv(
-    OUTPUT_DIR / "missing_values.csv",
-    encoding="utf-8-sig"
-)
-
-print("\nSo gia tri thieu theo cot:")
-print(df.isna().sum())
+df.describe().to_csv(OUTPUT_DIR / "dataset_summary.csv", encoding="utf-8-sig")
+df.isna().sum().rename("Missing_Count").to_csv(OUTPUT_DIR / "missing_values.csv", encoding="utf-8-sig")
 
 
 # ============================================================
-# 5. CHIA TRAIN VA TEST
+# 5. CHIA TRAIN VA TEST - NIEM PHONG TAP TEST
 # ============================================================
 
 X = df[BASE_FEATURES].copy()
@@ -433,15 +224,156 @@ X_train_raw, X_test_raw, y_train, y_test = train_test_split(
     y,
     test_size=TEST_SIZE,
     random_state=RANDOM_STATE,
-    stratify=y
+    stratify=y,
 )
 
-print("\nSo mau train:", len(X_train_raw))
-print("So mau test :", len(X_test_raw))
+print(f"\nChia tap: Train = {X_train_raw.shape}, Test = {X_test_raw.shape}")
+print(f"Phan bo lop tren TRAIN: 0 = {sum(y_train == 0)}, 1 = {sum(y_train == 1)} (Ty le duong = {y_train.mean():.2%})")
+print(f"Phan bo lop tren TEST : 0 = {sum(y_test == 0)}, 1 = {sum(y_test == 1)} (Ty le duong = {y_test.mean():.2%})")
+print(">> NGUYEN TAC: Tap Test duoc NIEM PHONG hoan toan. Viec 13 chi tinh toan tren tap TRAIN bang 5-Fold CV!")
 
 
 # ============================================================
-# 6. FEATURE ENGINEERING - VIEC 9
+# 6. PROTOCOL METRIC CONFIRMATION (PCCV VIEC 17)
+# ============================================================
+
+protocol_info = {
+    "Positive_Class": "Outcome = 1 (Nguoi mac benh tieu duong)",
+    "Negative_Class": "Outcome = 0 (Nguoi khong mac benh tieu duong)",
+    "Primary_Metric": "Recall (Do nhay lam sang - uu tien hang dau de tranh bo sot benh / False Negative)",
+    "Secondary_Metrics": [
+        "Accuracy (Do chinh xac tong the)",
+        "Precision (Kiem soat ty le du doan duong tinh that)",
+        "F1-Score (Trung binh dieu hoa giua Precision va Recall)",
+        "ROC-AUC (Kha nang phan biet xac suat tong the)",
+        "PR-AUC (Average Precision - danh gia tot tren du lieu mat can bang lop)",
+    ],
+    "Nguoi_Xac_Nhan_Modeling": "Nguyen Tan Hieu",
+    "Nguoi_Xac_Nhan_Evaluation": "Kien Quoc",
+    "Ngay_Xac_Nhan": "2026-11-08",
+    "Trang_Thai": "DA CHOT PROTOCOL",
+}
+
+with open(OUTPUT_DIR / "protocol_metric_confirmation.json", "w", encoding="utf-8") as f:
+    json.dump(protocol_info, f, ensure_ascii=False, indent=4)
+
+
+# ============================================================
+# 7. BASELINE MODELS CHUA TUNING - 5-FOLD CV TREN TRAIN (CONG 5)
+# ============================================================
+
+print("\n" + "=" * 70)
+print("7. DANH GIA BASELINE MODEL CHUA TUNING (5-FOLD CV TREN TRAIN)")
+print("=" * 70)
+
+BASELINE_MODELS = {
+    "Dummy (Most Frequent)": Pipeline([
+        ("model", DummyClassifier(strategy="most_frequent")),
+    ]),
+    "Dummy (Stratified)": Pipeline([
+        ("model", DummyClassifier(strategy="stratified", random_state=RANDOM_STATE)),
+    ]),
+    "Logistic Regression (Default)": Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+        ("model", LogisticRegression(random_state=RANDOM_STATE, max_iter=2000)),
+    ]),
+    "Random Forest (Default)": Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("model", RandomForestClassifier(random_state=RANDOM_STATE)),
+    ]),
+    "SVM (Default)": Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+        ("model", SVC(kernel="rbf", probability=True, random_state=RANDOM_STATE)),
+    ]),
+}
+
+cv = StratifiedKFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
+baseline_cv_summary = []
+baseline_fold_records = []
+
+for b_name, b_pipe in BASELINE_MODELS.items():
+    f_acc, f_prec, f_rec, f_f1, f_auc, f_prauc = [], [], [], [], [], []
+
+    for fold, (tr_idx, val_idx) in enumerate(cv.split(X_train_raw, y_train), 1):
+        X_tr, X_val = X_train_raw.iloc[tr_idx], X_train_raw.iloc[val_idx]
+        y_tr, y_val = y_train.iloc[tr_idx], y_train.iloc[val_idx]
+
+        pipe = clone(b_pipe)
+        pipe.fit(X_tr, y_tr)
+
+        y_p = pipe.predict(X_val)
+        if hasattr(pipe, "predict_proba"):
+            y_s = pipe.predict_proba(X_val)[:, 1]
+        elif hasattr(pipe, "decision_function"):
+            y_s = pipe.decision_function(X_val)
+        else:
+            y_s = y_p
+
+        acc = accuracy_score(y_val, y_p)
+        prec = precision_score(y_val, y_p, zero_division=0)
+        rec = recall_score(y_val, y_p, zero_division=0)
+        f1 = f1_score(y_val, y_p, zero_division=0)
+
+        try:
+            auc = roc_auc_score(y_val, y_s)
+        except Exception:
+            auc = 0.5
+
+        try:
+            prauc = average_precision_score(y_val, y_s)
+        except Exception:
+            prauc = y_val.mean()
+
+        f_acc.append(acc)
+        f_prec.append(prec)
+        f_rec.append(rec)
+        f_f1.append(f1)
+        f_auc.append(auc)
+        f_prauc.append(prauc)
+
+        baseline_fold_records.append({
+            "Mo_Hinh": b_name,
+            "Fold": fold,
+            "Accuracy": acc,
+            "Precision": prec,
+            "Recall": rec,
+            "F1": f1,
+            "ROC_AUC": auc,
+            "PR_AUC": prauc,
+        })
+
+    baseline_cv_summary.append({
+        "Mo_Hinh": b_name,
+        "Loai": "Baseline chua tuning (8 features goc)",
+        "Du_Lieu": "TRAIN (5-Fold CV)",
+        "Accuracy": float(np.mean(f_acc)),
+        "Accuracy_Std": float(np.std(f_acc)),
+        "Precision": float(np.mean(f_prec)),
+        "Precision_Std": float(np.std(f_prec)),
+        "Recall": float(np.mean(f_rec)),
+        "Recall_Std": float(np.std(f_rec)),
+        "F1": float(np.mean(f_f1)),
+        "F1_Std": float(np.std(f_f1)),
+        "ROC_AUC": float(np.mean(f_auc)),
+        "ROC_AUC_Std": float(np.std(f_auc)),
+        "PR_AUC": float(np.mean(f_prauc)),
+        "PR_AUC_Std": float(np.std(f_prauc)),
+    })
+
+baseline_df = pd.DataFrame(baseline_cv_summary)
+baseline_df.to_csv(OUTPUT_DIR / "baseline_model_results.csv", index=False, encoding="utf-8-sig")
+baseline_df.to_csv(OUTPUT_DIR / "baseline_cv_train_summary.csv", index=False, encoding="utf-8-sig")
+pd.DataFrame(baseline_fold_records).to_csv(OUTPUT_DIR / "baseline_cv_train_per_fold.csv", index=False, encoding="utf-8-sig")
+
+print("\nBang Baseline Models (5-Fold CV tren Train):")
+cols_view = ["Mo_Hinh", "Accuracy", "Precision", "Recall", "F1", "ROC_AUC"]
+print(baseline_df[cols_view].round(4).to_string(index=False))
+
+
+# ============================================================
+# 8. FEATURE ENGINEERING - 5 KICH BAN (VIEC 9)
 # ============================================================
 
 SCENARIOS = {
@@ -454,616 +386,233 @@ SCENARIOS = {
 
 
 def make_features(X_input, scenario):
-    """
-    Tao feature tu du lieu goc.
-    Khong su dung target trong feature engineering.
-    """
-
     Z = X_input[BASE_FEATURES].copy()
 
-    # Ratio co xu ly chia cho 0
-    if scenario in [
-        "2_Them_Ratio",
-        "3_Them_Category",
-        "4_Tat_Ca_Feature",
-        "5_Bo_SkinThickness",
-    ]:
-        Z["Glucose_BMI_Ratio"] = (
-            Z["Glucose"]
-            / Z["BMI"].replace(0, np.nan)
-        )
+    if scenario in ["2_Them_Ratio", "3_Them_Category", "4_Tat_Ca_Feature", "5_Bo_SkinThickness"]:
+        Z["Glucose_BMI_Ratio"] = Z["Glucose"] / Z["BMI"].replace(0, np.nan)
 
-    # Category BMI va Age
-    if scenario in [
-        "3_Them_Category",
-        "4_Tat_Ca_Feature",
-        "5_Bo_SkinThickness",
-    ]:
-        bmi_category = pd.cut(
+    if scenario in ["3_Them_Category", "4_Tat_Ca_Feature", "5_Bo_SkinThickness"]:
+        Z["BMI_Category"] = pd.cut(
             Z["BMI"],
             bins=[-np.inf, 18.5, 25, 30, np.inf],
-            labels=[
-                "Underweight",
-                "Normal",
-                "Overweight",
-                "Obese",
-            ],
-        )
+            labels=["Underweight", "Normal", "Overweight", "Obese"],
+        ).astype("object")
 
-        age_category = pd.cut(
+        Z["Age_Category"] = pd.cut(
             Z["Age"],
             bins=[-np.inf, 30, 45, np.inf],
-            labels=[
-                "Young",
-                "Middle",
-                "Older",
-            ],
-        )
+            labels=["Young", "Middle", "Older"],
+        ).astype("object")
 
-        Z["BMI_Category"] = bmi_category.astype("object")
-        Z["Age_Category"] = age_category.astype("object")
+    if scenario in ["4_Tat_Ca_Feature", "5_Bo_SkinThickness"]:
+        Z["Glucose_Insulin_Ratio"] = Z["Glucose"] / Z["Insulin"].replace(0, np.nan)
+        Z["Age_BMI_Ratio"] = Z["Age"] / Z["BMI"].replace(0, np.nan)
 
-    # Them feature phu cho kich ban 4 va 5
-    if scenario in [
-        "4_Tat_Ca_Feature",
-        "5_Bo_SkinThickness",
-    ]:
-        Z["Glucose_Insulin_Ratio"] = (
-            Z["Glucose"]
-            / Z["Insulin"].replace(0, np.nan)
-        )
-
-        Z["Age_BMI_Ratio"] = (
-            Z["Age"]
-            / Z["BMI"].replace(0, np.nan)
-        )
-
-    # Loai bo SkinThickness neu duoc yeu cau
     if scenario == "5_Bo_SkinThickness":
-        Z = Z.drop(
-            columns=["SkinThickness"],
-            errors="ignore",
-        )
+        Z = Z.drop(columns=["SkinThickness"], errors="ignore")
 
-    # Chuyen category thanh one-hot
-    categorical_cols = [
-        col for col in ["BMI_Category", "Age_Category"]
-        if col in Z.columns
-    ]
-
+    categorical_cols = [c for c in ["BMI_Category", "Age_Category"] if c in Z.columns]
     if categorical_cols:
-        Z = pd.get_dummies(
-            Z,
-            columns=categorical_cols,
-            dtype=int,
-        )
+        Z = pd.get_dummies(Z, columns=categorical_cols, dtype=int)
 
+    Z = Z.replace([np.inf, -np.inf], np.nan)
     return Z
 
 
 # ============================================================
-# 7. DINH NGHIA CAC MO HINH
+# 9. HUAN LUYEN VA DANH GIA 15 TRUONG HOP BANG 5-FOLD CV TREN TRAIN
+# (5 Scenarios x 3 Models = 15 truong hop)
 # ============================================================
+
+print("\n" + "=" * 70)
+print("8. DANH GIA 15 KICH BAN THUC NGHIEM (5-FOLD CV TREN TRAIN)")
+print("=" * 70)
 
 MODELS = {
     "Logistic Regression": Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
         ("scaler", StandardScaler()),
-        ("model", LogisticRegression(
-            max_iter=2000,
-            random_state=RANDOM_STATE,
-        )),
+        ("model", LogisticRegression(max_iter=2000, random_state=RANDOM_STATE)),
     ]),
-
     "Random Forest": Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
-        ("model", RandomForestClassifier(
-            n_estimators=300,
-            random_state=RANDOM_STATE,
-            n_jobs=-1,
-        )),
+        ("model", RandomForestClassifier(n_estimators=100, random_state=RANDOM_STATE, n_jobs=1)),
     ]),
-
     "SVM": Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
         ("scaler", StandardScaler()),
-        ("model", SVC(
-            kernel="rbf",
-            probability=True,
-            random_state=RANDOM_STATE,
-        )),
+        ("model", SVC(kernel="rbf", probability=True, random_state=RANDOM_STATE)),
     ]),
 }
 
-
-
-# ============================================================
-# 7.1. DANH GIA BASELINE MODEL BANG 5-FOLD CV TREN TRAIN (CONG 5)
-# Giai quyet yeu cau nghiem thu Viec 13 & 17 cua Kien Quoc:
-# - DummyClassifier (most_frequent & stratified)
-# - Baseline LR, RF, SVM chua tuning bang 5-fold CV tren Train
-# - Xac nhan Protocol Metric: Outcome=1 la duong tinh, Recall uu tien chinh
-# ============================================================
-
-print("\n" + "=" * 70)
-print("DANH GIA BASELINE MODEL BANG 5-FOLD CV TREN TRAIN (CONG 5)")
-print("=" * 70)
-
-BASELINE_MODELS = {
-    "Dummy (Most Frequent)": Pipeline([
-        ("model", DummyClassifier(strategy="most_frequent"))
-    ]),
-    "Dummy (Stratified)": Pipeline([
-        ("model", DummyClassifier(strategy="stratified", random_state=RANDOM_STATE))
-    ]),
-    "Logistic Regression (Default)": Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-        ("scaler", StandardScaler()),
-        ("model", LogisticRegression(random_state=RANDOM_STATE, max_iter=2000))
-    ]),
-    "Random Forest (Default)": Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-        ("model", RandomForestClassifier(random_state=RANDOM_STATE))
-    ]),
-    "SVM (Default)": Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-        ("scaler", StandardScaler()),
-        ("model", SVC(kernel="rbf", probability=True, random_state=RANDOM_STATE))
-    ]),
-}
-
-cv_baseline = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
-baseline_cv_rows = []
-
-for b_name, b_pipe in BASELINE_MODELS.items():
-    f_recalls, f_precisions, f_f1s, f_aucs, f_praucs, f_accs = [], [], [], [], [], []
-    
-    for fold, (tr_idx, val_idx) in enumerate(cv_baseline.split(X_train_raw, y_train), 1):
-        X_tr, X_val = X_train_raw.iloc[tr_idx], X_train_raw.iloc[val_idx]
-        y_tr, y_val = y_train.iloc[tr_idx], y_train.iloc[val_idx]
-        
-        pipe_fold = clone(b_pipe)
-        pipe_fold.fit(X_tr, y_tr)
-        
-        y_p = pipe_fold.predict(X_val)
-        if hasattr(pipe_fold, "predict_proba"):
-            y_s = pipe_fold.predict_proba(X_val)[:, 1]
-        elif hasattr(pipe_fold, "decision_function"):
-            y_s = pipe_fold.decision_function(X_val)
-        else:
-            y_s = y_p
-            
-        f_recalls.append(recall_score(y_val, y_p, zero_division=0))
-        f_precisions.append(precision_score(y_val, y_p, zero_division=0))
-        f_f1s.append(f1_score(y_val, y_p, zero_division=0))
-        f_accs.append(accuracy_score(y_val, y_p))
-        try:
-            f_aucs.append(roc_auc_score(y_val, y_s))
-        except Exception:
-            f_aucs.append(0.5)
-        try:
-            f_praucs.append(average_precision_score(y_val, y_s))
-        except Exception:
-            f_praucs.append(y_val.mean())
-            
-    baseline_cv_rows.append({
-        "Mo_Hinh": b_name,
-        "CV_Recall_Mean": np.mean(f_recalls),
-        "CV_Recall_Std": np.std(f_recalls),
-        "CV_F1_Mean": np.mean(f_f1s),
-        "CV_F1_Std": np.std(f_f1s),
-        "CV_ROC_AUC_Mean": np.mean(f_aucs),
-        "CV_ROC_AUC_Std": np.std(f_aucs),
-        "CV_PR_AUC_Mean": np.mean(f_praucs),
-        "CV_Precision_Mean": np.mean(f_precisions),
-        "CV_Accuracy_Mean": np.mean(f_accs),
-    })
-
-baseline_cv_df = pd.DataFrame(baseline_cv_rows)
-# Luu ket qua baseline phuc vu Cong 5 va repo:
-baseline_cv_df.to_csv(OUTPUT_DIR / "baseline_cv_train_summary.csv", index=False, encoding="utf-8-sig")
-baseline_cv_df.to_csv(OUTPUT_DIR / "baseline_model_results.csv", index=False, encoding="utf-8-sig")
-
-print("\nBang ket qua Baseline Model (5-fold CV tren Train):")
-print(baseline_cv_df[["Mo_Hinh", "CV_Recall_Mean", "CV_F1_Mean", "CV_ROC_AUC_Mean", "CV_Accuracy_Mean"]].round(4).to_string(index=False))
-
-# Xac nhan Protocol Metric (PCCV Viec 17)
-protocol_metric_info = {
-    "Positive_Class": "Outcome = 1",
-    "Primary_Metric": "Recall",
-    "Secondary_Metrics": ["Precision", "F1", "ROC-AUC", "PR-AUC", "Accuracy"],
-    "Xac_Nhan_Boi": "Nguyen Tan Hieu (Modeling) & Kien Quoc (Evaluation)",
-    "Ngay_Xac_Nhan": "2026-11-05",
-    "Trang_Thai": "DA CHOT"
-}
-with open(OUTPUT_DIR / "protocol_metric_confirmation.json", "w", encoding="utf-8") as f:
-    json.dump(protocol_metric_info, f, ensure_ascii=False, indent=4)
-print("\n[OK] Da chot Protocol Metric: Outcome=1 la duong tinh; Recall uu tien hang dau.")
-# ============================================================
-# 8. HUAN LUYEN VA DANH GIA 15 TRUONG HOP
-# ============================================================
-
-all_results = []
-classification_reports = []
+experiment_results = []
+experiment_fold_records = []
 feature_summaries = []
 
 for scenario, description in SCENARIOS.items():
-
-    print("\n" + "=" * 70)
-    print("KICH BAN:", scenario)
-    print(description)
-    print("=" * 70)
-
-    X_train = make_features(X_train_raw, scenario)
-    X_test = make_features(X_test_raw, scenario)
-
-    # Dam bao train va test co cung tap cot
-    X_test = X_test.reindex(
-        columns=X_train.columns,
-        fill_value=0,
-    )
-
-    # Ep cac cot thanh so
-    X_train = X_train.apply(
-        pd.to_numeric,
-        errors="coerce",
-    )
-
-    X_test = X_test.apply(
-        pd.to_numeric,
-        errors="coerce",
-    )
+    X_train_scen = make_features(X_train_raw, scenario)
 
     feature_summaries.append({
         "Ten_Thu_Nghiem": scenario,
         "Mo_Ta": description,
-        "So_Luong_Feature": len(X_train.columns),
-        "Danh_Sach_Feature": ", ".join(X_train.columns),
+        "So_Luong_Feature": len(X_train_scen.columns),
+        "Danh_Sach_Feature": ", ".join(X_train_scen.columns),
     })
 
-    print("So feature:", len(X_train.columns))
+    print(f"\n--- Kich ban: {scenario} ({len(X_train_scen.columns)} features) ---")
 
     for model_name, pipeline_template in MODELS.items():
+        f_acc, f_prec, f_rec, f_f1, f_auc, f_prauc = [], [], [], [], [], []
 
-        print("\nDang huan luyen:", model_name)
+        for fold, (tr_idx, val_idx) in enumerate(cv.split(X_train_scen, y_train), 1):
+            X_tr, X_val = X_train_scen.iloc[tr_idx], X_train_scen.iloc[val_idx]
+            y_tr, y_val = y_train.iloc[tr_idx], y_train.iloc[val_idx]
 
-        model = clone(pipeline_template)
-        model.fit(X_train, y_train)
+            model = clone(pipeline_template)
+            model.fit(X_tr, y_tr)
 
-        y_pred = model.predict(X_test)
+            y_p = model.predict(X_val)
+            y_s = model.predict_proba(X_val)[:, 1] if hasattr(model, "predict_proba") else (model.decision_function(X_val) if hasattr(model, "decision_function") else y_p)
 
-        # Lay score cho ROC-AUC
-        if hasattr(model, "predict_proba"):
-            y_score = model.predict_proba(X_test)[:, 1]
-        else:
-            y_score = model.decision_function(X_test)
+            acc = accuracy_score(y_val, y_p)
+            prec = precision_score(y_val, y_p, zero_division=0)
+            rec = recall_score(y_val, y_p, zero_division=0)
+            f1 = f1_score(y_val, y_p, zero_division=0)
 
-        # Cac metric danh gia
-        accuracy = accuracy_score(y_test, y_pred)
+            try:
+                auc = roc_auc_score(y_val, y_s)
+            except Exception:
+                auc = 0.5
 
-        precision = precision_score(
-            y_test,
-            y_pred,
-            zero_division=0,
-        )
+            try:
+                prauc = average_precision_score(y_val, y_s)
+            except Exception:
+                prauc = y_val.mean()
 
-        recall = recall_score(
-            y_test,
-            y_pred,
-            zero_division=0,
-        )
+            f_acc.append(acc)
+            f_prec.append(prec)
+            f_rec.append(rec)
+            f_f1.append(f1)
+            f_auc.append(auc)
+            f_prauc.append(prauc)
 
-        f1 = f1_score(
-            y_test,
-            y_pred,
-            zero_division=0,
-        )
+            experiment_fold_records.append({
+                "Ten_Thu_Nghiem": scenario,
+                "Mo_Hinh": model_name,
+                "Fold": fold,
+                "Accuracy": acc,
+                "Precision": prec,
+                "Recall": rec,
+                "F1": f1,
+                "ROC_AUC": auc,
+                "PR_AUC": prauc,
+            })
 
-        roc_auc = roc_auc_score(
-            y_test,
-            y_score,
-        )
+        mean_acc = float(np.mean(f_acc))
+        mean_prec = float(np.mean(f_prec))
+        mean_rec = float(np.mean(f_rec))
+        mean_f1 = float(np.mean(f_f1))
+        mean_auc = float(np.mean(f_auc))
+        mean_prauc = float(np.mean(f_prauc))
 
-        result = {
+        experiment_results.append({
             "Ten_Thu_Nghiem": scenario,
             "Mo_Ta": description,
             "Mo_Hinh": model_name,
-            "So_Luong_Feature": len(X_train.columns),
-            "Accuracy": accuracy,
-            "Precision": precision,
-            "Recall": recall,
-            "F1": f1,
-            "ROC_AUC": roc_auc,
-        }
-
-        all_results.append(result)
+            "So_Luong_Feature": len(X_train_scen.columns),
+            "Du_Lieu": "TRAIN (5-Fold CV)",
+            "Accuracy": mean_acc,
+            "Accuracy_Std": float(np.std(f_acc)),
+            "Precision": mean_prec,
+            "Precision_Std": float(np.std(f_prec)),
+            "Recall": mean_rec,
+            "Recall_Std": float(np.std(f_rec)),
+            "F1": mean_f1,
+            "F1_Std": float(np.std(f_f1)),
+            "ROC_AUC": mean_auc,
+            "ROC_AUC_Std": float(np.std(f_auc)),
+            "PR_AUC": mean_prauc,
+            "PR_AUC_Std": float(np.std(f_prauc)),
+        })
 
         print(
-            f"Accuracy={accuracy:.4f} | "
-            f"Precision={precision:.4f} | "
-            f"Recall={recall:.4f} | "
-            f"F1={f1:.4f} | "
-            f"ROC-AUC={roc_auc:.4f}"
+            f"  {model_name:20s} | "
+            f"Acc: {mean_acc:.4f} | "
+            f"Precision: {mean_prec:.4f} | "
+            f"Recall: {mean_rec:.4f} | "
+            f"F1: {mean_f1:.4f} | "
+            f"ROC-AUC: {mean_auc:.4f}"
         )
 
-        # Classification report
-        report = classification_report(
-            y_test,
-            y_pred,
-            output_dict=True,
-            zero_division=0,
-        )
+        # Fit toan bo Train de luu artifact
+        model_full_train = clone(pipeline_template)
+        model_full_train.fit(X_train_scen, y_train)
 
-        for label, values in report.items():
-            if isinstance(values, dict):
-                classification_reports.append({
-                    "Ten_Thu_Nghiem": scenario,
-                    "Mo_Hinh": model_name,
-                    "Class": label,
-                    **values,
-                })
-
-        # Ten file
-        safe_model_name = (
-            model_name.lower()
-            .replace(" ", "_")
-            .replace("(", "")
-            .replace(")", "")
-        )
-
-        # Luu model cung danh sach cot dau vao
-        artifact = {
-            "model": model,
-            "features": X_train.columns.tolist(),
-            "scenario": scenario,
-            "model_name": model_name,
-            "target": TARGET_COL,
-            "zero_as_missing": ZERO_AS_MISSING,
-        }
-
+        safe_name = model_name.lower().replace(" ", "_").replace("(", "").replace(")", "")
         joblib.dump(
-            artifact,
-            MODEL_DIR / f"{scenario}_{safe_model_name}.joblib",
+            {
+                "model": model_full_train,
+                "features": X_train_scen.columns.tolist(),
+                "scenario": scenario,
+                "model_name": model_name,
+                "evaluation": "5-Fold CV on Train",
+            },
+            MODEL_DIR / f"{scenario}_{safe_name}.joblib",
         )
-
-        # Confusion matrix
-        fig, ax = plt.subplots(figsize=(5, 4))
-
-        ConfusionMatrixDisplay(
-            confusion_matrix=confusion_matrix(
-                y_test,
-                y_pred,
-                labels=[0, 1],
-            ),
-            display_labels=[0, 1],
-        ).plot(
-            ax=ax,
-            cmap="Blues",
-            colorbar=False,
-        )
-
-        ax.set_title(f"{model_name} - {scenario}")
-        fig.tight_layout()
-
-        fig.savefig(
-            PLOT_DIR
-            / f"confusion_matrix_{scenario}_{safe_model_name}.png",
-            dpi=150,
-            bbox_inches="tight",
-        )
-
-        plt.close(fig)
-
-        # ROC curve
-        fig, ax = plt.subplots(figsize=(6, 5))
-
-        RocCurveDisplay.from_predictions(
-            y_test,
-            y_score,
-            name=model_name,
-            ax=ax,
-        )
-
-        ax.set_title(f"ROC Curve - {scenario}")
-        fig.tight_layout()
-
-        fig.savefig(
-            PLOT_DIR
-            / f"roc_curve_{scenario}_{safe_model_name}.png",
-            dpi=150,
-            bbox_inches="tight",
-        )
-
-        plt.close(fig)
 
 
 # ============================================================
-# 9. LUU BANG KET QUA
+# 10. LUU FILE VA VE BIEU DO SO SANH 5 CHI SO TREN TRAIN
 # ============================================================
 
-results_df = pd.DataFrame(all_results)
+exp_df = pd.DataFrame(experiment_results)
+exp_df.to_csv(OUTPUT_DIR / "feature_experiment_results.csv", index=False, encoding="utf-8-sig")
+pd.DataFrame(feature_summaries).to_csv(OUTPUT_DIR / "feature_experiment_summary.csv", index=False, encoding="utf-8-sig")
+pd.DataFrame(experiment_fold_records).to_csv(OUTPUT_DIR / "feature_experiment_per_fold.csv", index=False, encoding="utf-8-sig")
 
-results_df = results_df.sort_values(
-    by=["ROC_AUC", "F1", "Recall"],
-    ascending=False,
-).reset_index(drop=True)
+# Tao classification report tong hop tu CV tren Train
+class_report_rows = []
+for row in experiment_results:
+    class_report_rows.append({
+        "Ten_Thu_Nghiem": row["Ten_Thu_Nghiem"],
+        "Mo_Hinh": row["Mo_Hinh"],
+        "Du_Lieu": "TRAIN (5-Fold CV)",
+        "Precision": row["Precision"],
+        "Recall": row["Recall"],
+        "F1_Score": row["F1"],
+        "Support_Positive": sum(y_train == 1),
+        "Accuracy": row["Accuracy"],
+        "ROC_AUC": row["ROC_AUC"],
+    })
+pd.DataFrame(class_report_rows).to_csv(OUTPUT_DIR / "classification_report.csv", index=False, encoding="utf-8-sig")
 
-results_df.to_csv(
-    OUTPUT_DIR / "baseline_model_results.csv",
-    index=False,
-    encoding="utf-8-sig",
-)
-
-feature_df = pd.DataFrame(feature_summaries)
-
-feature_df.to_csv(
-    OUTPUT_DIR / "feature_experiment_results.csv",
-    index=False,
-    encoding="utf-8-sig",
-)
-
-report_df = pd.DataFrame(classification_reports)
-
-report_df.to_csv(
-    OUTPUT_DIR / "classification_report.csv",
-    index=False,
-    encoding="utf-8-sig",
-)
-
-# Bang tong hop trung binh 3 mo hinh theo tung scenario
-feature_summary = (
-    results_df
-    .groupby("Ten_Thu_Nghiem", as_index=False)
-    .agg(
-        So_Luong_Feature=("So_Luong_Feature", "first"),
-        Accuracy_Trung_Binh=("Accuracy", "mean"),
-        Recall_Trung_Binh=("Recall", "mean"),
-        F1_Trung_Binh=("F1", "mean"),
-        ROC_AUC_Trung_Binh=("ROC_AUC", "mean"),
-    )
-)
-
-feature_summary.to_csv(
-    OUTPUT_DIR / "feature_experiment_summary.csv",
-    index=False,
-    encoding="utf-8-sig",
-)
-
-
-# ============================================================
-# 10. VE BIEU DO SO SANH CAC MO HINH
-# ============================================================
-
-metrics = [
-    ("Accuracy", "accuracy"),
-    ("Recall", "recall"),
-    ("F1", "f1"),
-    ("ROC_AUC", "roc_auc"),
+# Ve bieu do so sanh 5 metrics tren tap Train
+metrics_to_plot = [
+    ("Accuracy", "So sanh Accuracy (5-Fold CV tren Train)", "comparison_accuracy.png"),
+    ("Precision", "So sanh Precision (5-Fold CV tren Train)", "comparison_precision.png"),
+    ("Recall", "So sanh Recall (5-Fold CV tren Train)", "comparison_recall.png"),
+    ("F1", "So sanh F1-Score (5-Fold CV tren Train)", "comparison_f1.png"),
+    ("ROC_AUC", "So sanh ROC-AUC (5-Fold CV tren Train)", "comparison_roc_auc.png"),
 ]
 
-for metric_col, file_suffix in metrics:
-
-    pivot = results_df.pivot(
-        index="Ten_Thu_Nghiem",
-        columns="Mo_Hinh",
-        values=metric_col,
-    )
-
-    ax = pivot.plot(
-        kind="bar",
-        figsize=(13, 6),
-        rot=20,
-    )
-
-    ax.set_title(f"So sanh cac mo hinh - {metric_col}")
-    ax.set_xlabel("Feature Engineering scenario")
+for metric_col, title, filename in metrics_to_plot:
+    fig, ax = plt.subplots(figsize=(10, 5))
+    pivot = exp_df.pivot(index="Ten_Thu_Nghiem", columns="Mo_Hinh", values=metric_col)
+    pivot.plot(kind="bar", ax=ax, rot=15, colormap="viridis")
+    ax.set_title(title, fontsize=12, fontweight="bold")
     ax.set_ylabel(metric_col)
-    ax.set_ylim(0, 1)
-    ax.grid(axis="y", alpha=0.3)
-    ax.legend(title="Model")
-
-    plt.tight_layout()
-
-    plt.savefig(
-        PLOT_DIR / f"comparison_{file_suffix}.png",
-        dpi=160,
-        bbox_inches="tight",
-    )
-
-    plt.show()
-    plt.close()
-
-
-# ============================================================
-# 11. LUU CAU HINH THUC NGHIEM
-# ============================================================
-
-config = {
-    "dataset_path": str(DATA_PATH),
-    "target_column": TARGET_COL,
-    "random_state": RANDOM_STATE,
-    "test_size": TEST_SIZE,
-    "train_rows": int(len(X_train_raw)),
-    "test_rows": int(len(X_test_raw)),
-    "original_features": BASE_FEATURES,
-    "zero_as_missing": ZERO_AS_MISSING,
-    "models": list(MODELS.keys()),
-    "scenarios": SCENARIOS,
-}
-
-with open(
-    OUTPUT_DIR / "experiment_config.json",
-    "w",
-    encoding="utf-8",
-) as f:
-    json.dump(
-        config,
-        f,
-        ensure_ascii=False,
-        indent=4,
-    )
-
-
-# ============================================================
-# 12. HIEN THI KET QUA
-# ============================================================
-
-display_columns = [
-    "Ten_Thu_Nghiem",
-    "Mo_Hinh",
-    "So_Luong_Feature",
-    "Accuracy",
-    "Recall",
-    "F1",
-    "ROC_AUC",
-]
-
-print("\n" + "=" * 100)
-print("KET QUA DANH GIA 3 MO HINH")
-print("=" * 100)
-
-display(
-    results_df[display_columns].round(4)
-)
-
-print("\n" + "=" * 100)
-print("TOP 5 THEO ROC-AUC")
-print("=" * 100)
-
-display(
-    results_df[display_columns].head(5).round(4)
-)
-
-best_result = results_df.iloc[0]
-
-print("\nMO HINH CO ROC-AUC CAO NHAT TREN CAC THU NGHIEM")
-print("Feature scenario:", best_result["Ten_Thu_Nghiem"])
-print("Model:", best_result["Mo_Hinh"])
-print(f"Accuracy: {best_result['Accuracy']:.4f}")
-print(f"Recall:   {best_result['Recall']:.4f}")
-print(f"F1-score: {best_result['F1']:.4f}")
-print(f"ROC-AUC:  {best_result['ROC_AUC']:.4f}")
-
-
-# ============================================================
-# 13. DANH SACH FILE DA LUU
-# ============================================================
+    ax.set_xlabel("Kich ban Feature")
+    ax.set_ylim(0, 1.0)
+    ax.grid(axis="y", linestyle="--", alpha=0.5)
+    ax.legend(title="Mo hinh")
+    fig.tight_layout()
+    fig.savefig(PLOT_DIR / filename, dpi=150, bbox_inches="tight")
+    plt.close(fig)
 
 print("\n" + "=" * 70)
-print("HOAN THANH VIEC 13")
+print("HOAN THANH VIEC 13: TAT CA METRIC DUOC TINH BANG 5-FOLD CV TREN TRAIN!")
+print("Cac file da luu trong Model/Viec13:")
+for p in sorted(OUTPUT_DIR.iterdir()):
+    if p.is_file():
+        print(" -", p.name)
 print("=" * 70)
-
-print("\nThu muc ket qua:")
-print(OUTPUT_DIR)
-
-print("\nFile CSV:")
-for path in sorted(OUTPUT_DIR.glob("*.csv")):
-    print(" -", path.name)
-
-print("\nFile bieu do:")
-for path in sorted(PLOT_DIR.glob("*.png")):
-    print(" -", path.name)
-
-print("\nFile model:")
-for path in sorted(MODEL_DIR.glob("*.joblib")):
-    print(" -", path.name)
