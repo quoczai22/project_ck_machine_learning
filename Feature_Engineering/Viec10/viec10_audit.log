@@ -7,3 +7,10 @@
 2026-11-07 10:54:50,462 - Viec10_Experiments - INFO - Đang chạy thử nghiệm: 5. Tất cả (Loại SkinThickness)
 2026-11-07 10:54:50,571 - Viec10_Experiments - INFO - Hoàn thành xuất file báo cáo so sánh.
 2026-11-07 10:54:50,571 - Viec10_Experiments - INFO - HOÀN THÀNH CÔNG VIỆC 10.
+2026-11-09 18:04:23,383 - Viec10_Experiments - INFO - BẮT ĐẦU CÔNG VIỆC 10: THỬ NGHIỆM FEATURE VỚI METRIC F1, ROC-AUC, PR-AUC
+2026-11-09 18:04:23,399 - Viec10_Experiments - INFO - Đang chạy: 1. Baseline
+2026-11-09 18:04:23,524 - Viec10_Experiments - INFO - Đang chạy: 2. Thêm Ratio
+2026-11-09 18:04:23,633 - Viec10_Experiments - INFO - Đang chạy: 3. Thêm Category (BMI, Age)
+2026-11-09 18:04:23,774 - Viec10_Experiments - INFO - Đang chạy: 4. Tất cả Feature
+2026-11-09 18:04:23,899 - Viec10_Experiments - INFO - Đang chạy: 5. Tất cả (Loại SkinThickness)
+2026-11-09 18:04:24,024 - Viec10_Experiments - INFO - Hoàn thành xuất file.

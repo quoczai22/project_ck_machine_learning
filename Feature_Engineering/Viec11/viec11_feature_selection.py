@@ -13,75 +13,49 @@ import joblib
 import warnings
 warnings.filterwarnings('ignore')
 
-# THIẾT LẬP AUDIT LOG
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("viec11_audit.log", encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.FileHandler("viec11_audit.log", encoding='utf-8'), logging.StreamHandler()])
 logger = logging.getLogger("Viec11_Selection")
 
 class FeatureEngineer(BaseEstimator, TransformerMixin):
-    def __init__(self, cols):
-        self.cols = cols
-    def fit(self, X, y=None):
-        return self
+    def __init__(self, cols): self.cols = cols
+    def fit(self, X, y=None): return self
     def transform(self, X):
         df = pd.DataFrame(X, columns=self.cols)
         df['Glucose_to_Insulin_ratio'] = df['Glucose'] / df['Insulin'].clip(lower=1e-6)
-        bins_bmi = [0, 18.5, 25.0, 30.0, float('inf')]
-        bmi_labels = ['Underweight', 'Normal', 'Overweight', 'Obese']
-        df['BMI_category'] = pd.cut(df['BMI'], bins=bins_bmi, labels=bmi_labels, right=False)
-        bins_age = [0, 35, 55, float('inf')]
-        age_labels = ['Young_Adults', 'Middle_Aged', 'Seniors']
-        df['Age_group'] = pd.cut(df['Age'], bins=bins_age, labels=age_labels, right=False)
-        df['BMI_category'] = pd.Categorical(df['BMI_category'], categories=bmi_labels)
-        df['Age_group'] = pd.Categorical(df['Age_group'], categories=age_labels)
+        df['BMI_category'] = pd.cut(df['BMI'], bins=[0, 18.5, 25.0, 30.0, float('inf')], labels=['Underweight', 'Normal', 'Overweight', 'Obese'], right=False)
+        df['Age_group'] = pd.cut(df['Age'], bins=[0, 35, 55, float('inf')], labels=['Young_Adults', 'Middle_Aged', 'Seniors'], right=False)
+        df['BMI_category'] = pd.Categorical(df['BMI_category'], categories=['Underweight', 'Normal', 'Overweight', 'Obese'])
+        df['Age_group'] = pd.Categorical(df['Age_group'], categories=['Young_Adults', 'Middle_Aged', 'Seniors'])
         return pd.get_dummies(df, columns=['BMI_category', 'Age_group'], drop_first=True)
 
 def main():
-    logger.info("BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP CHỌN LỌC ĐẶC TRƯNG")
-    
+    logger.info("BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC")
     path_to_viec7 = '../../Tien_Xu_Li/Viec_7/'
     X_train_raw = pd.read_csv(f'{path_to_viec7}X_train.csv')
     y_train = pd.read_csv(f'{path_to_viec7}y_train.csv').squeeze()
     base_cols = X_train_raw.columns.tolist()
 
     def evaluate_selection(selector_name, selector_obj=None):
-        logger.info(f"Đánh giá phương pháp: {selector_name}")
-        steps = [
-            ('imputer', SimpleImputer(strategy='median')),
-            ('fe', FeatureEngineer(cols=base_cols))
-        ]
-        if selector_obj is not None:
-            steps.append(('selector', selector_obj))
-            
-        steps.extend([
-            ('scaler', StandardScaler()),
-            ('model', LogisticRegression(max_iter=1000, random_state=42))
-        ])
+        logger.info(f"Đánh giá: {selector_name}")
+        steps = [('imputer', SimpleImputer(strategy='median')), ('fe', FeatureEngineer(cols=base_cols))]
+        if selector_obj is not None: steps.append(('selector', selector_obj))
+        steps.extend([('scaler', StandardScaler()), ('model', LogisticRegression(max_iter=1000, random_state=42))])
         
         pipeline = Pipeline(steps)
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-        cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=['recall', 'accuracy'])
+        scoring = ['f1', 'roc_auc', 'average_precision']
+        cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=scoring)
         
-        # Fit 1 lần để lấy tên cột
         pipeline.fit(X_train_raw, y_train)
-        fe_columns = pipeline.named_steps['fe'].transform(pd.DataFrame(np.zeros((1, len(base_cols))), columns=base_cols)).columns
-        
-        if selector_obj is not None:
-            mask = pipeline.named_steps['selector'].get_support()
-            kept_features = ", ".join(fe_columns[mask].tolist())
-        else:
-            kept_features = "Tất cả"
+        fe_cols = pipeline.named_steps['fe'].transform(pd.DataFrame(np.zeros((1, len(base_cols))), columns=base_cols)).columns
+        kept_features = ", ".join(fe_cols[pipeline.named_steps['selector'].get_support()].tolist()) if selector_obj else "Tất cả"
             
         return {
             'Phương_Pháp': selector_name,
-            'Recall_Mean': round(cv_results['test_recall'].mean(), 4),
-            'Recall_Std': round(cv_results['test_recall'].std(), 4),
+            'F1_Mean': round(cv_results['test_f1'].mean(), 4),
+            'ROC_AUC_Mean': round(cv_results['test_roc_auc'].mean(), 4),
+            'PR_AUC_Mean': round(cv_results['test_average_precision'].mean(), 4),
             'Feature_Được_Chọn': kept_features,
             'Pipeline': pipeline
         }
@@ -96,21 +70,16 @@ def main():
 
     df_results = pd.DataFrame(results)
     
-    # Tìm model có Recall cao nhất
-    best_idx = df_results['Recall_Mean'].idxmax()
+    # Lấy thuật toán có điểm F1-Score cao nhất làm nhà vô địch
+    best_idx = df_results['F1_Mean'].idxmax()
     best_pipeline = df_results.iloc[best_idx]['Pipeline']
     best_method = df_results.iloc[best_idx]['Phương_Pháp']
     
-    logger.info(f"Kết luận: Phương pháp tốt nhất là [{best_method}]")
+    logger.info(f"KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [{best_method}]")
     
     df_results.drop(columns=['Pipeline']).to_csv('ket_luan_feature_selection.csv', index=False, encoding='utf-8-sig')
-    
-    # BÀN GIAO PIPELINE DẠNG PICKLE
-    logger.info("Đang đóng gói Pipeline thành đối tượng .pkl để bàn giao...")
     joblib.dump(best_pipeline, 'feature_pipeline_for_app.pkl')
-    logger.info("Đã xuất file: feature_pipeline_for_app.pkl")
-    
-    logger.info("HOÀN THÀNH CÔNG VIỆC 11.")
+    logger.info("Đã xuất file pkl.")
 
 if __name__ == "__main__":
     main()

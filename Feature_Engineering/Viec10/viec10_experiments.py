@@ -10,64 +10,43 @@ from sklearn.pipeline import Pipeline
 import warnings
 warnings.filterwarnings('ignore')
 
-# THIẾT LẬP AUDIT LOG
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("viec10_audit.log", encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.FileHandler("viec10_audit.log", encoding='utf-8'), logging.StreamHandler()])
 logger = logging.getLogger("Viec10_Experiments")
 
-# LỚP TẠO FEATURE NẰM TRONG PIPELINE
 class FeatureEngineer(BaseEstimator, TransformerMixin):
     def __init__(self, cols):
         self.cols = cols
-    def fit(self, X, y=None):
-        return self
+    def fit(self, X, y=None): return self
     def transform(self, X):
         df = pd.DataFrame(X, columns=self.cols)
-        safe_insulin = df['Insulin'].clip(lower=1e-6)
-        df['Glucose_to_Insulin_ratio'] = df['Glucose'] / safe_insulin
-        
+        df['Glucose_to_Insulin_ratio'] = df['Glucose'] / df['Insulin'].clip(lower=1e-6)
         bins_bmi = [0, 18.5, 25.0, 30.0, float('inf')]
         bmi_labels = ['Underweight', 'Normal', 'Overweight', 'Obese']
         df['BMI_category'] = pd.cut(df['BMI'], bins=bins_bmi, labels=bmi_labels, right=False)
-        
         bins_age = [0, 35, 55, float('inf')]
         age_labels = ['Young_Adults', 'Middle_Aged', 'Seniors']
         df['Age_group'] = pd.cut(df['Age'], bins=bins_age, labels=age_labels, right=False)
-        
         df['BMI_category'] = pd.Categorical(df['BMI_category'], categories=bmi_labels)
         df['Age_group'] = pd.Categorical(df['Age_group'], categories=age_labels)
-        
         return pd.get_dummies(df, columns=['BMI_category', 'Age_group'], drop_first=True)
 
 class ColumnSelector(BaseEstimator, TransformerMixin):
-    def __init__(self, cols_to_keep):
-        self.cols_to_keep = cols_to_keep
-    def fit(self, X, y=None):
-        return self
+    def __init__(self, cols_to_keep): self.cols_to_keep = cols_to_keep
+    def fit(self, X, y=None): return self
     def transform(self, X):
-        if self.cols_to_keep == 'all':
-            return X
-        keep = [c for c in X.columns if c in self.cols_to_keep]
-        return X[keep]
+        if self.cols_to_keep == 'all': return X
+        return X[[c for c in X.columns if c in self.cols_to_keep]]
 
 def main():
-    logger.info("BẮT ĐẦU CÔNG VIỆC 10: THỬ NGHIỆM FEATURE MỚI")
-    
+    logger.info("BẮT ĐẦU CÔNG VIỆC 10: THỬ NGHIỆM FEATURE VỚI METRIC F1, ROC-AUC, PR-AUC")
     path_to_viec7 = '../../Tien_Xu_Li/Viec_7/'
     X_train_raw = pd.read_csv(f'{path_to_viec7}X_train.csv')
     y_train = pd.read_csv(f'{path_to_viec7}y_train.csv').squeeze()
     base_cols = X_train_raw.columns.tolist()
     
-    logger.info("Khởi tạo cấu trúc Pipeline: Imputer -> FeatureEngineer -> Selector -> Scaler -> Model")
-    
     def run_experiment(exp_name, features_to_keep, removed_cols="Không có"):
-        logger.info(f"Đang chạy thử nghiệm: {exp_name}")
+        logger.info(f"Đang chạy: {exp_name}")
         pipeline = Pipeline([
             ('imputer', SimpleImputer(strategy='median')),
             ('fe', FeatureEngineer(cols=base_cols)),
@@ -77,13 +56,15 @@ def main():
         ])
         
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-        cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=['recall', 'accuracy'])
+        # THAY ĐỔI METRIC TẠI ĐÂY
+        scoring = ['f1', 'roc_auc', 'average_precision']
+        cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=scoring)
         
         return {
             'Tên_Thử_Nghiệm': exp_name,
-            'Recall_Mean': round(cv_results['test_recall'].mean(), 4),
-            'Recall_Std': round(cv_results['test_recall'].std(), 4),
-            'Accuracy_Mean': round(cv_results['test_accuracy'].mean(), 4),
+            'F1_Mean': round(cv_results['test_f1'].mean(), 4),
+            'ROC_AUC_Mean': round(cv_results['test_roc_auc'].mean(), 4),
+            'PR_AUC_Mean': round(cv_results['test_average_precision'].mean(), 4),
             'Feature_Bị_Loại': removed_cols
         }
 
@@ -99,10 +80,8 @@ def main():
     experiments_log.append(run_experiment("4. Tất cả Feature", 'all'))
     experiments_log.append(run_experiment("5. Tất cả (Loại SkinThickness)", [c for c in all_cols if c != 'SkinThickness'], "SkinThickness"))
 
-    results_df = pd.DataFrame(experiments_log)
-    results_df.to_csv('bang_so_sanh_feature_experiments.csv', index=False, encoding='utf-8-sig')
-    logger.info("Hoàn thành xuất file báo cáo so sánh.")
-    logger.info("HOÀN THÀNH CÔNG VIỆC 10.")
+    pd.DataFrame(experiments_log).to_csv('bang_so_sanh_feature_experiments.csv', index=False, encoding='utf-8-sig')
+    logger.info("Hoàn thành xuất file.")
 
 if __name__ == "__main__":
     main()
