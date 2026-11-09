@@ -1,4 +1,4 @@
-﻿
+
 # ============================================================
 # VIEC 14 - STRATIFIED K-FOLD & GRIDSEARCHCV
 # Dataset: Pima Indians Diabetes
@@ -52,7 +52,7 @@ warnings.filterwarnings("ignore")
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
 N_SPLITS = 5
-N_JOBS = -1
+N_JOBS = 1
 
 try:
     CURRENT_DIR = Path(__file__).resolve().parent
@@ -687,7 +687,7 @@ for model_name, config in MODEL_CONFIGS.items():
             "f1": "f1",
             "roc_auc": "roc_auc",
         },
-        refit="roc_auc",
+        refit="recall",
         cv=cv,
         n_jobs=N_JOBS,
         verbose=1,
@@ -799,8 +799,8 @@ for model_name, config in MODEL_CONFIGS.items():
 results_df = pd.DataFrame(search_results)
 
 results_df.sort_values(
-    by="Best_CV_ROC_AUC",
-    ascending=False,
+    by=["Best_CV_Recall", "Best_CV_F1", "Best_CV_ROC_AUC"],
+    ascending=[False, False, False],
     inplace=True,
 )
 
@@ -914,11 +914,11 @@ weight_df.to_csv(
     encoding="utf-8-sig",
 )
 
-# Chon candidate tot nhat theo ROC-AUC trong moi nhom model/weight.
+# Chon candidate tot nhat theo Recall trong moi nhom model/weight.
 weight_best_df = (
     weight_df.sort_values(
-        "CV_ROC_AUC",
-        ascending=False,
+        by=["CV_Recall", "CV_F1", "CV_ROC_AUC"],
+        ascending=[False, False, False],
     )
     .groupby(
         ["Mo_Hinh", "Class_Weight"],
@@ -1062,19 +1062,54 @@ save_table_png(
 
 
 # ============================================================
-# 11. BIEU DO SO SANH CV ROC-AUC
+# 11. BIEU DO SO SANH CV RECALL VA ROC-AUC
 # ============================================================
 
+# Bieu do Best CV Recall (Uu tien chinh - refit='recall')
 fig, ax = plt.subplots(figsize=(10, 6))
 
 plot_df = results_df.sort_values(
-    "Best_CV_ROC_AUC",
+    "Best_CV_Recall",
     ascending=True,
 )
 
 ax.barh(
     plot_df["Mo_Hinh"],
-    plot_df["Best_CV_ROC_AUC"],
+    plot_df["Best_CV_Recall"],
+    color="#d9534f",
+)
+
+ax.set_title(
+    "Viec 14 - Best Cross-Validation Recall (refit='recall')",
+    fontsize=14,
+    fontweight="bold",
+)
+
+ax.set_xlabel("Mean CV Recall")
+ax.set_xlim(0, 1)
+ax.grid(axis="x", alpha=0.3)
+
+fig.tight_layout()
+
+fig.savefig(
+    str(OUTPUT_DIR / "Viec14_So_Sanh_Best_CV_Recall.png"),
+    dpi=200,
+    bbox_inches="tight",
+)
+plt.close(fig)
+
+# Bieu do Best CV ROC-AUC
+fig, ax = plt.subplots(figsize=(10, 6))
+
+plot_df_auc = results_df.sort_values(
+    "Best_CV_ROC_AUC",
+    ascending=True,
+)
+
+ax.barh(
+    plot_df_auc["Mo_Hinh"],
+    plot_df_auc["Best_CV_ROC_AUC"],
+    color="#337ab7",
 )
 
 ax.set_title(
@@ -1090,11 +1125,10 @@ ax.grid(axis="x", alpha=0.3)
 fig.tight_layout()
 
 fig.savefig(
-    OUTPUT_DIR / "Viec14_So_Sanh_Best_CV_ROC_AUC.png",
+    str(OUTPUT_DIR / "Viec14_So_Sanh_Best_CV_ROC_AUC.png"),
     dpi=200,
     bbox_inches="tight",
 )
-plt.show()
 plt.close(fig)
 
 
@@ -1145,12 +1179,12 @@ for metric_col, metric_label, filename in [
     fig.tight_layout()
 
     fig.savefig(
-        OUTPUT_DIR / filename,
+        str(OUTPUT_DIR / filename),
         dpi=200,
         bbox_inches="tight",
     )
 
-    plt.show()
+    # plt.show()
     plt.close(fig)
 
 
@@ -1204,7 +1238,7 @@ config_output = {
         "f1",
         "roc_auc",
     ],
-    "refit_metric": "roc_auc",
+    "refit_metric": "recall",
     "feature_scenario": SELECTED_SCENARIO,
     "features": X_train.columns.tolist(),
     "class_weight_comparison": [None, "balanced"],
@@ -1259,17 +1293,19 @@ for model_name, estimator in best_estimators.items():
 best_result = results_df.iloc[0]
 
 print("\n" + "=" * 75)
-print("KET QUA TOT NHAT THEO BEST CV ROC-AUC")
+print("KET QUA TOT NHAT THEO BEST CV RECALL (refit='recall')")
 print("=" * 75)
 
 print("Model:", best_result["Mo_Hinh"])
 print("Feature scenario:", best_result["Scenario"])
 print("Class weight:", best_result["Best_Class_Weight"])
+print(f"Best CV Recall:  {best_result['Best_CV_Recall']:.4f}")
+print(f"Best CV F1:      {best_result['Best_CV_F1']:.4f}")
 print(f"Best CV ROC-AUC: {best_result['Best_CV_ROC_AUC']:.4f}")
-print(f"Test ROC-AUC: {best_result['Test_ROC_AUC']:.4f}")
-print(f"Test Accuracy: {best_result['Test_Accuracy']:.4f}")
-print(f"Test Recall: {best_result['Test_Recall']:.4f}")
-print(f"Test F1: {best_result['Test_F1']:.4f}")
+print(f"Test Recall:     {best_result['Test_Recall']:.4f}")
+print(f"Test F1:         {best_result['Test_F1']:.4f}")
+print(f"Test ROC-AUC:    {best_result['Test_ROC_AUC']:.4f}")
+print(f"Test Accuracy:   {best_result['Test_Accuracy']:.4f}")
 
 print("\nBang tong hop:")
 display(results_df.round(4))
