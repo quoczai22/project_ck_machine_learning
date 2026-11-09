@@ -687,11 +687,7 @@ for model_name, config in MODEL_CONFIGS.items():
             "f1": "f1",
             "roc_auc": "roc_auc",
         },
-<<<<<<< HEAD
-        refit="recall",
-=======
         refit="recall",  # Recall la metric chinh (bien ban chot 0,03)
->>>>>>> 213a697d169c4e914226bd715ac68053800ece2d
         cv=cv,
         n_jobs=N_JOBS,
         verbose=1,
