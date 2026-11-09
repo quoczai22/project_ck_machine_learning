@@ -298,14 +298,20 @@ print("\n\n" + "="*70)
 print("   YÊU CẦU 3: TEST - PIPELINE DỰ ĐOÁN ĐƯỢC DỮ LIỆU MỚI")
 print("="*70)
 
-# ---- 3.1. Đánh giá trên tập Test ----
-y_pred = preprocessing_pipeline.predict(X_test)
+# ---- 3.1. Đánh giá bằng 5-fold CV trên tập TRAIN (không dùng Test) ----
+# Test không dùng ở Việc 6; đánh giá trên Test thuộc bước đánh giá cuối của nhóm.
+from sklearn.model_selection import StratifiedKFold, cross_validate
+cv_train = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+cv_scores = cross_validate(
+    preprocessing_pipeline, X_train, y_train, cv=cv_train,
+    scoring=['accuracy', 'recall', 'f1', 'roc_auc'],
+)
 
-print("\n[ĐÁNH GIÁ TRÊN TẬP TEST]:")
+print("\n[ĐÁNH GIÁ 5-FOLD CV TRÊN TẬP TRAIN]:")
 print("-"*60)
-print(f"  Accuracy: {accuracy_score(y_test, y_pred):.4f}")
-print("\n  Classification Report:")
-print(classification_report(y_test, y_pred))
+for metric in ['accuracy', 'recall', 'f1', 'roc_auc']:
+    values = cv_scores[f'test_{metric}']
+    print(f"  {metric:10s}: {values.mean():.4f} ± {values.std():.4f}")
 
 # ---- 3.2. Demo dự đoán bệnh nhân mới (dữ liệu thô có giá trị 0) ----
 print("\n[DEMO DỰ ĐOÁN BỆNH NHÂN MỚI (dữ liệu thô có giá trị 0)]:")
@@ -371,16 +377,7 @@ print(f"TEST 3C: Nhãn dự đoán hợp lệ ({pred_class[0]}).")
 assert len(predictions) == len(patients), "Batch prediction lỗi!"
 print(f"TEST 3D: Batch prediction OK ({len(predictions)} bệnh nhân).")
 
-# ---- 3.5. Confusion Matrix ----
-fig_cm, ax_cm = plt.subplots(figsize=(8, 6))
-cm = confusion_matrix(y_test, y_pred)
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Khỏe mạnh (0)', 'Tiểu đường (1)'])
-disp.plot(cmap='Blues', ax=ax_cm)
-ax_cm.set_title('Ma trận nhầm lẫn (Confusion Matrix)', fontsize=13, fontweight='bold', pad=15)
-fig_cm.tight_layout()
-fig_cm.savefig('viet6_confusion_matrix.png', dpi=200, bbox_inches='tight', facecolor='white')
-print("\n>>> Đã lưu: viet6_confusion_matrix.png")
-plt.show()
+# Confusion matrix trên Test đã bỏ khỏi Việc 6.
 
 
 # ==============================================================================
