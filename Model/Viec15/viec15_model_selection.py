@@ -521,7 +521,7 @@ MODEL_CONFIGS = {
             )),
         ]),
         "param_grid": {
-            "model__n_estimators": [200, 400],
+            "model__n_estimators": [100, 200],
             "model__max_depth": [None, 8],
             "model__min_samples_leaf": [1, 3],
             "model__class_weight": [None, "balanced"],
@@ -863,6 +863,214 @@ selected_model.fit(X_train_selected, y_train)
 
 
 # ============================================================
+# 11b. PHÂN TÍCH ĐỘ NHẠY CỦA NGƯỠNG TOLERANCE (SENSITIVITY ANALYSIS)
+# ============================================================
+print("\n" + "=" * 75)
+print("PHAN TICH DO NHAY CUA NGUONG TOLERANCE (F1 & ROC-AUC)")
+print("=" * 75)
+
+tolerances = [
+    0.000, 0.005, 0.010, 0.015, 0.020, 0.025, 0.028, 0.030, 0.040, 0.050, 0.100, None
+]
+
+sensitivity_rows = []
+for tol in tolerances:
+    if tol is None:
+        tol_str = "Unconstrained"
+        eligible = best_candidates_df.copy()
+    else:
+        tol_str = f"{tol:.3f}"
+        eligible = best_candidates_df[
+            (best_candidates_df["CV_F1"] >= best_f1 - tol)
+            & (best_candidates_df["CV_ROC_AUC"] >= best_auc - tol)
+        ].copy()
+
+    n_eligible = len(eligible)
+    if n_eligible == 0:
+        score = (best_candidates_df["CV_F1"] / best_f1) + (
+            best_candidates_df["CV_ROC_AUC"] / best_auc
+        )
+        best_cand = best_candidates_df.loc[score.idxmax()]
+        reason = "Fallback (Max F1 + ROC-AUC)"
+    else:
+        best_cand = eligible.sort_values(
+            by=["CV_Recall", "CV_F1", "CV_ROC_AUC"],
+            ascending=False,
+        ).iloc[0]
+        reason = f"Top Recall trong {n_eligible} candidate hop le"
+
+    sensitivity_rows.append({
+        "Tolerance": tol_str,
+        "Tolerance_Numeric": 999.0 if tol is None else tol,
+        "So_Candidate_Hop_Le": n_eligible,
+        "Scenario_Duoc_Chon": best_cand["Scenario"],
+        "Model_Duoc_Chon": best_cand["Mo_Hinh"],
+        "Class_Weight": best_cand["Class_Weight"],
+        "CV_Recall": best_cand["CV_Recall"],
+        "CV_F1": best_cand["CV_F1"],
+        "CV_ROC_AUC": best_cand["CV_ROC_AUC"],
+        "CV_Accuracy": best_cand["CV_Accuracy"],
+        "CV_Precision": best_cand["CV_Precision"],
+        "Ly_Do": reason,
+    })
+
+sensitivity_df = pd.DataFrame(sensitivity_rows)
+sensitivity_df.to_csv(
+    OUTPUT_DIR / "Viec15_Sensitivity_Tolerance.csv",
+    index=False,
+    encoding="utf-8-sig",
+)
+
+# Phân tích tương tự trên toàn bộ 171 candidate của GridSearch
+sensitivity_all_rows = []
+max_f1_all = all_cv_df["Mean_CV_F1"].max()
+max_auc_all = all_cv_df["Mean_CV_ROC_AUC"].max()
+
+for tol in tolerances:
+    if tol is None:
+        tol_str = "Unconstrained"
+        eligible_all = all_cv_df.copy()
+    else:
+        tol_str = f"{tol:.3f}"
+        eligible_all = all_cv_df[
+            (all_cv_df["Mean_CV_F1"] >= max_f1_all - tol)
+            & (all_cv_df["Mean_CV_ROC_AUC"] >= max_auc_all - tol)
+        ].copy()
+
+    n_all = len(eligible_all)
+    if n_all == 0:
+        score_all = (all_cv_df["Mean_CV_F1"] / max_f1_all) + (
+            all_cv_df["Mean_CV_ROC_AUC"] / max_auc_all
+        )
+        top_all = all_cv_df.loc[score_all.idxmax()]
+        reason_all = "Fallback"
+    else:
+        top_all = eligible_all.sort_values(
+            by=["Mean_CV_Recall", "Mean_CV_F1", "Mean_CV_ROC_AUC"],
+            ascending=False,
+        ).iloc[0]
+        reason_all = f"Top Recall trong {n_all} candidate"
+
+    sensitivity_all_rows.append({
+        "Tolerance": tol_str,
+        "So_Candidate_Hop_Le": n_all,
+        "Scenario_Duoc_Chon": top_all["Scenario"],
+        "Model_Duoc_Chon": top_all["Mo_Hinh"],
+        "Class_Weight": top_all["Class_Weight"],
+        "CV_Recall": top_all["Mean_CV_Recall"],
+        "CV_F1": top_all["Mean_CV_F1"],
+        "CV_ROC_AUC": top_all["Mean_CV_ROC_AUC"],
+        "CV_Accuracy": top_all["Mean_CV_Accuracy"],
+        "CV_Precision": top_all["Mean_CV_Precision"],
+    })
+
+sensitivity_all_df = pd.DataFrame(sensitivity_all_rows)
+sensitivity_all_df.to_csv(
+    OUTPUT_DIR / "Viec15_Sensitivity_Tolerance_All.csv",
+    index=False,
+    encoding="utf-8-sig",
+)
+
+print(
+    sensitivity_df[
+        [
+            "Tolerance",
+            "So_Candidate_Hop_Le",
+            "Scenario_Duoc_Chon",
+            "Model_Duoc_Chon",
+            "CV_Recall",
+            "CV_F1",
+            "CV_ROC_AUC",
+            "CV_Accuracy",
+            "CV_Precision",
+        ]
+    ]
+    .round(4)
+    .to_string(index=False)
+)
+
+# Vẽ biểu đồ độ nhạy Tolerance
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+
+x_labels = sensitivity_df["Tolerance"].tolist()
+x_pos = np.arange(len(x_labels))
+
+ax1.plot(
+    x_pos,
+    sensitivity_df["CV_Recall"],
+    marker="o",
+    linewidth=2.5,
+    color="#d9534f",
+    label="CV Recall (Uu tien so 1)",
+)
+ax1.plot(
+    x_pos,
+    sensitivity_df["CV_F1"],
+    marker="s",
+    linewidth=2,
+    color="#337ab7",
+    label="CV F1",
+)
+ax1.plot(
+    x_pos,
+    sensitivity_df["CV_ROC_AUC"],
+    marker="^",
+    linewidth=2,
+    color="#5cb85c",
+    label="CV ROC-AUC",
+)
+ax1.plot(
+    x_pos,
+    sensitivity_df["CV_Accuracy"],
+    marker="d",
+    linewidth=1.5,
+    color="#f0ad4e",
+    linestyle="--",
+    label="CV Accuracy",
+)
+ax1.axvline(x=7, color="purple", linestyle=":", linewidth=2, label="Chot: Tolerance = 0.030")
+ax1.set_ylabel("Diem so CV tren Train", fontsize=11)
+ax1.set_title(
+    "Phan tich do nhay theo nguong Tolerance tren tap Train (5-Fold Stratified CV)",
+    fontsize=13,
+    fontweight="bold",
+)
+ax1.grid(True, alpha=0.3)
+ax1.legend(loc="lower right", frameon=True)
+ax1.set_ylim(0.55, 0.90)
+
+ax2.bar(
+    x_pos - 0.15,
+    sensitivity_df["So_Candidate_Hop_Le"],
+    width=0.3,
+    label="Candidate hop le (Best per model: /15)",
+    color="#24527a",
+)
+ax2.bar(
+    x_pos + 0.15,
+    sensitivity_all_df["So_Candidate_Hop_Le"],
+    width=0.3,
+    label="Candidate hop le (Tat ca grid: /171)",
+    color="#85a3c2",
+)
+ax2.axvline(x=7, color="purple", linestyle=":", linewidth=2)
+ax2.set_xticks(x_pos)
+ax2.set_xticklabels(x_labels, rotation=25)
+ax2.set_xlabel("Nguong Tolerance (F1 & ROC-AUC)", fontsize=11)
+ax2.set_ylabel("So luong candidate", fontsize=11)
+ax2.grid(True, alpha=0.3)
+ax2.legend(loc="upper left", frameon=True)
+
+plt.tight_layout()
+fig.savefig(
+    OUTPUT_DIR / "Viec15_Sensitivity_Tolerance.png",
+    dpi=200,
+    bbox_inches="tight",
+)
+plt.close(fig)
+
+
+# ============================================================
 # 12. LUU MODEL DA CHOT VA BIEN BAN CHON MODEL
 # ============================================================
 
@@ -954,12 +1162,13 @@ memo_table = pd.DataFrame([
     {"Noi_Dung": "CV F1", "Gia_Tri": round(selected["CV_F1"], 4)},
     {"Noi_Dung": "CV ROC-AUC", "Gia_Tri": round(selected["CV_ROC_AUC"], 4)},
     {"Noi_Dung": "CV Accuracy", "Gia_Tri": round(selected["CV_Accuracy"], 4)},
+    {"Noi_Dung": "CV Precision", "Gia_Tri": round(selected["CV_Precision"], 4)},
     {"Noi_Dung": "So fold", "Gia_Tri": N_SPLITS},
     {"Noi_Dung": "Du lieu chon model", "Gia_Tri": "TRAIN only"},
     {"Noi_Dung": "Quy tac", "Gia_Tri": selection_reason},
     {"Noi_Dung": "Nguoi xac nhan", "Gia_Tri": "Nguyen Tan Hieu & Kien Quoc"},
     {"Noi_Dung": "Ngay xac nhan", "Gia_Tri": "2026-11-05"},
-    {"Noi_Dung": "Xac nhan tolerance 0.03", "Gia_Tri": "GIU NGUYEN 0.03"},
+    {"Noi_Dung": "Xac nhan tolerance 0.03", "Gia_Tri": "CHOT 0.030 (toi uu Recall=79.47%, dat nguong 1.5*std)"},
 ])
 
 memo_table.to_csv(
@@ -978,63 +1187,67 @@ def save_table_png(dataframe, filepath, title, max_rows=40):
     Xuat dataframe thanh anh PNG bang matplotlib.
     Khong dung pandas Styler/Jinja2.
     """
-    data = dataframe.copy().head(max_rows)
+    try:
+        data = dataframe.copy().head(max_rows)
 
-    # Lam gon gia tri so de bang de doc
-    for col in data.columns:
-        if pd.api.types.is_float_dtype(data[col]):
-            data[col] = data[col].map(
-                lambda x: f"{x:.4f}" if pd.notna(x) else ""
-            )
+        # Lam gon gia tri so de bang de doc
+        for col in data.columns:
+            if pd.api.types.is_float_dtype(data[col]):
+                data[col] = data[col].map(
+                    lambda x: f"{x:.4f}" if pd.notna(x) else ""
+                )
 
-    n_rows, n_cols = data.shape
+        n_rows, n_cols = data.shape
 
-    fig_width = max(12, min(24, n_cols * 2.0))
-    fig_height = max(3.5, min(18, (n_rows + 2) * 0.42))
+        fig_width = max(12, min(24, n_cols * 2.0))
+        fig_height = max(3.5, min(18, (n_rows + 2) * 0.42))
 
-    fig, ax = plt.subplots(
-        figsize=(fig_width, fig_height)
-    )
+        fig, ax = plt.subplots(
+            figsize=(fig_width, fig_height)
+        )
 
-    ax.axis("off")
-    ax.set_title(
-        title,
-        fontsize=13,
-        fontweight="bold",
-        pad=18,
-    )
+        ax.axis("off")
+        ax.set_title(
+            title,
+            fontsize=13,
+            fontweight="bold",
+            pad=18,
+        )
 
-    table = ax.table(
-        cellText=data.values,
-        colLabels=data.columns,
-        cellLoc="center",
-        colLoc="center",
-        loc="center",
-    )
+        table = ax.table(
+            cellText=data.values,
+            colLabels=data.columns,
+            cellLoc="center",
+            colLoc="center",
+            loc="center",
+        )
 
-    table.auto_set_font_size(False)
-    table.set_fontsize(8)
-    table.scale(1, 1.35)
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        table.scale(1, 1.35)
 
-    for (row, col), cell in table.get_celld().items():
-        if row == 0:
-            cell.set_text_props(
-                weight="bold",
-                color="white",
-            )
-            cell.set_facecolor("#24527a")
-        else:
-            cell.set_facecolor(
-                "#eef4f8" if row % 2 == 0 else "white"
-            )
+        for (row, col), cell in table.get_celld().items():
+            if row == 0:
+                cell.set_text_props(
+                    weight="bold",
+                    color="white",
+                )
+                cell.set_facecolor("#24527a")
+            else:
+                cell.set_facecolor(
+                    "#eef4f8" if row % 2 == 0 else "white"
+                )
 
-    fig.tight_layout()
-    fig.savefig(
-        filepath,
-        dpi=200,
-        bbox_inches="tight",
-    )
-    plt.close(fig)
+        fig.tight_layout()
+        fig.savefig(
+            str(filepath),
+            dpi=150,
+            bbox_inches="tight",
+        )
+        plt.close(fig)
+    except Exception as exc:
+        print(f"[Canh bao] Khong the luu table PNG {filepath}: {exc}")
+        plt.close("all")
 
 
 # Bang tat ca candidate co the rat dai.
@@ -1060,6 +1273,12 @@ save_table_png(
     "Viec 15 - Bien ban chon model",
 )
 
+save_table_png(
+    sensitivity_df.drop(columns=["Tolerance_Numeric", "Ly_Do"]),
+    OUTPUT_DIR / "Viec15_Sensitivity_Tolerance_Table.png",
+    "Viec 15 - Bang phan tich do nhay theo nguong Tolerance (Train CV)",
+)
+
 
 # ============================================================
 # 14. VE BIEU DO SO SANH KET QUA CV VA LUU PNG
@@ -1075,33 +1294,36 @@ for metric, title, filename in [
     ("CV_F1", "So sanh F1 trung binh CV", "Viec15_CV_F1.png"),
     ("CV_ROC_AUC", "So sanh ROC-AUC trung binh CV", "Viec15_CV_ROC_AUC.png"),
 ]:
-    pivot = plot_df.pivot(
-        index="Scenario",
-        columns="Mo_Hinh",
-        values=metric,
-    )
+    try:
+        pivot = plot_df.pivot(
+            index="Scenario",
+            columns="Mo_Hinh",
+            values=metric,
+        )
 
-    ax = pivot.plot(
-        kind="bar",
-        figsize=(13, 6),
-        rot=20,
-    )
+        ax = pivot.plot(
+            kind="bar",
+            figsize=(13, 6),
+            rot=20,
+        )
 
-    ax.set_title(title)
-    ax.set_xlabel("Scenario")
-    ax.set_ylabel(metric)
-    ax.set_ylim(0, 1)
-    ax.grid(axis="y", alpha=0.3)
-    ax.legend(title="Model")
+        ax.set_title(title)
+        ax.set_xlabel("Scenario")
+        ax.set_ylabel(metric)
+        ax.set_ylim(0, 1)
+        ax.grid(axis="y", alpha=0.3)
+        ax.legend(title="Model")
 
-    plt.tight_layout()
-    plt.savefig(
-        OUTPUT_DIR / filename,
-        dpi=200,
-        bbox_inches="tight",
-    )
-    plt.show()
-    plt.close()
+        plt.tight_layout()
+        plt.savefig(
+            str(OUTPUT_DIR / filename),
+            dpi=200,
+            bbox_inches="tight",
+        )
+        plt.close()
+    except Exception as exc:
+        print(f"[Canh bao] Khong the luu bieu do {filename}: {exc}")
+        plt.close("all")
 
 
 # ============================================================
@@ -1224,12 +1446,14 @@ ax.set_title(
 )
 
 fig.tight_layout()
-fig.savefig(
-    OUTPUT_DIR / "Viec15_Final_Test_Confusion_Matrix.png",
-    dpi=200,
-    bbox_inches="tight",
-)
-plt.show()
+try:
+    fig.savefig(
+        str(OUTPUT_DIR / "Viec15_Final_Test_Confusion_Matrix.png"),
+        dpi=200,
+        bbox_inches="tight",
+    )
+except Exception as exc:
+    print(f"[Canh bao] Khong the luu confusion matrix PNG: {exc}")
 plt.close(fig)
 
 
