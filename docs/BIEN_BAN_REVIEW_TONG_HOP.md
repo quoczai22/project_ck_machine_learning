@@ -56,7 +56,7 @@ Phạm vi: đối chiếu các việc trong PCCV (bản local cập nhật 02/10
 |---|---|---|---|
 | 13 | Baseline LR, RF, SVM | ✅ HT | CV trên Train, đủ Accuracy, Precision, Recall, F1, ROC-AUC, PR-AUC |
 | 14 | GridSearch | 🟡 HTC | Đã sửa `refit` sang Recall và cố định scenario 2 (PR #2, #4 đã merge). **Cần chạy lại** và quyết định phần đánh giá Test từng model |
-| 15 | Chọn candidate | 🟡 HTC | SVM, scenario 2, C=0,1, balanced, gamma=scale. **Thiếu chữ ký** biên bản |
+| 15 | Chọn candidate | ✅ HT | SVM, scenario 2, C=0,1, balanced, gamma=scale. Ngưỡng 0,03 đã chốt qua tin nhắn ngày 09/11/2026 (Hiệu và Kiến Quốc). Chưa có bản chữ ký |
 | 16 | Lý thuyết và ví dụ LR, RF, SVM | ⬜ CH | Chưa có trong repo. Hiệu phải tự viết |
 
 ---
@@ -76,7 +76,7 @@ Phạm vi: đối chiếu các việc trong PCCV (bản local cập nhật 02/10
 
 | Việc | Nội dung | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 17 | Protocol metric | 🟡 HTC | Đã có trong code, README, metadata. **Cần chữ ký** của Hiệu và Kiến Quốc |
+| 17 | Protocol metric | ✅ HT | Đã có trong code, README, metadata. Đã chốt qua tin nhắn ngày 09/11/2026 (Hiệu và Kiến Quốc) |
 | 18 | Đánh giá candidate trên Test | 🟡 HTC | Có Recall, F1, ROC-AUC, PR-AUC, Accuracy, confusion matrix. **Ghi chú bắt buộc:** Test đã được xem nhiều lần, không phải lần đầu |
 | 19 | Phân tích FN/FP | 🟡 HTC | `reports/error_analysis.md`. **Cần Bảo rà soát** cách diễn giải |
 | 20 | Điều phối, rà soát | 🟠 DD | Biên bản này là bước đầu. Còn thu phản hồi từng thành viên và cập nhật PCCV |
