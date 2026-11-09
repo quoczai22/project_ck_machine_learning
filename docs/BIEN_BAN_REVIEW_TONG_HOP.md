@@ -96,13 +96,13 @@ Phạm vi: đối chiếu các việc trong PCCV (bản local cập nhật 02/10
 
 ## 8. Xác nhận
 
-Ký sau khi đọc và thống nhất nội dung.
+Biên bản được xác nhận qua tin nhắn; không yêu cầu chữ ký.
 
-| Thành viên | Chữ ký | Ngày |
-|---|---|---|
-| Trịnh Hữu Kiến Quốc (điều phối) | | |
-| Nguyễn Hiệu | | |
-| Đoàn Bảo | | |
-| Nguyễn Tấn Kỳ | | |
-| Sỹ Luân | | |
-| Phạm Tùng | | |
+| Thành viên | Trạng thái xác nhận |
+|---|---|
+| Trịnh Hữu Kiến Quốc (điều phối) | Đã xác nhận |
+| Nguyễn Hiệu | Đã xác nhận việc 15, 17 (ngày 09/11/2026) |
+| Đoàn Bảo | Chưa xác nhận |
+| Nguyễn Tấn Kỳ | Chưa xác nhận |
+| Sỹ Luân | Chưa xác nhận |
+| Phạm Tùng | Chưa xác nhận |
