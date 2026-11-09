@@ -441,7 +441,7 @@ def choose_scenario_from_viec13():
     return "1_Baseline"
 
 
-SELECTED_SCENARIO = choose_scenario_from_viec13()
+SELECTED_SCENARIO = "2_Them_Ratio"  # scenario chot trong Viec 15 (Recall-first); khong chon theo ROC-AUC
 
 
 # ============================================================
@@ -687,7 +687,7 @@ for model_name, config in MODEL_CONFIGS.items():
             "f1": "f1",
             "roc_auc": "roc_auc",
         },
-        refit="roc_auc",
+        refit="recall",  # Recall la metric chinh (bien ban chot 0,03)
         cv=cv,
         n_jobs=N_JOBS,
         verbose=1,
