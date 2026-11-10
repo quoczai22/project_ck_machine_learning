@@ -1,0 +1,6 @@
+﻿Scenario,Mo_Ta,So_Luong_Feature,Features
+1_Baseline,8 feature goc,8,"Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age"
+2_Them_Ratio,Them Glucose_BMI_Ratio,9,"Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age, Glucose_BMI_Ratio"
+3_Them_Category,Them BMI/Age category,16,"Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age, Glucose_BMI_Ratio, BMI_Category_Normal, BMI_Category_Obese, BMI_Category_Overweight, BMI_Category_Underweight, Age_Category_Middle, Age_Category_Older, Age_Category_Young"
+4_Tat_Ca_Feature,Ratio va category va feature phu,18,"Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age, Glucose_BMI_Ratio, Glucose_Insulin_Ratio, Age_BMI_Ratio, BMI_Category_Normal, BMI_Category_Obese, BMI_Category_Overweight, BMI_Category_Underweight, Age_Category_Middle, Age_Category_Older, Age_Category_Young"
+5_Bo_SkinThickness,"Feature engineered, bo SkinThickness",17,"Pregnancies, Glucose, BloodPressure, Insulin, BMI, DiabetesPedigreeFunction, Age, Glucose_BMI_Ratio, Glucose_Insulin_Ratio, Age_BMI_Ratio, BMI_Category_Normal, BMI_Category_Obese, BMI_Category_Overweight, BMI_Category_Underweight, Age_Category_Middle, Age_Category_Older, Age_Category_Young"
