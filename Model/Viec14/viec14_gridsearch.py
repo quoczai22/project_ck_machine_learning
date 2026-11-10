@@ -767,11 +767,9 @@ for model_name, config in MODEL_CONFIGS.items():
 
     print("\nTham so tot nhat (Chon tren TRAIN 5-Fold CV):")
     print(search.best_params_)
-    print(f"Best CV Recall:   {best_cv_recall:.4f}  <-- Metric quyet dinh")
-    print(f"Best CV F1:       {best_cv_f1:.4f}")
-    print(f"Best CV ROC-AUC:  {best_cv_auc:.4f}")
-    print(f"Best CV Accuracy: {best_cv_accuracy:.4f}")
-
+    print(f"Best CV Recall:  {best_cv_recall:.4f}  <-- Metric quyet dinh")
+    print(f"Best CV F1:      {best_cv_f1:.4f}")
+    print(f"Best CV ROC-AUC: {best_cv_auc:.4f}")
 
 # ============================================================
 # 8. LUU BANG KET QUA GRIDSEARCHCV
@@ -1162,83 +1160,35 @@ for metric_col, metric_label, filename in [
 
 
 # ============================================================
-# 13. TAO VA LUU CLASSIFICATION REPORT TREN TAP TRAIN
-# (5-Fold Stratified CV Out-Of-Fold va Full Train Fit)
+# 13. LUU CLASSIFICATION REPORT TREN TEST SET
 # ============================================================
 
-train_report_rows = []
+test_report_rows = []
 
-for model_name, estimator in best_estimators.items():
-    # 1. Out-Of-Fold (OOF) cross-validation predictions tren tap Train
-    # Danh gia tren toan bo 614 mau tap Train bang 5-Fold Stratified CV
-    y_train_oof_pred = cross_val_predict(
-        estimator,
-        X_train,
-        y_train,
-        cv=cv,
-        n_jobs=N_JOBS,
-    )
-
-    report_oof = classification_report(
-        y_train,
-        y_train_oof_pred,
+for item in test_predictions:
+    report = classification_report(
+        item["y_true"],
+        item["y_pred"],
         output_dict=True,
         zero_division=0,
     )
 
-    for label, values in report_oof.items():
+    for label, values in report.items():
         if isinstance(values, dict):
-            train_report_rows.append({
-                "Mo_Hinh": model_name,
-                "Du_Lieu": "TRAIN (5-Fold CV Out-of-Fold)",
+            test_report_rows.append({
+                "Mo_Hinh": item["Mo_Hinh"],
                 "Class": label,
-                "precision": values["precision"],
-                "recall": values["recall"],
-                "f1-score": values["f1-score"],
-                "support": int(values["support"]),
+                "Vai_Tro": "Chi tham khao doi chung - Khong dung chon model",
+                **values,
             })
 
-    # 2. In-sample fit tren toan bo tap Train (sau khi refit)
-    # Cung cap doi chung giua ket qua fit va ket qua tong quat hoa CV
-    y_train_fit_pred = estimator.predict(X_train)
-    report_fit = classification_report(
-        y_train,
-        y_train_fit_pred,
-        output_dict=True,
-        zero_division=0,
-    )
+test_report_df = pd.DataFrame(test_report_rows)
 
-    for label, values in report_fit.items():
-        if isinstance(values, dict):
-            train_report_rows.append({
-                "Mo_Hinh": model_name,
-                "Du_Lieu": "TRAIN (Full Train Fit)",
-                "Class": label,
-                "precision": values["precision"],
-                "recall": values["recall"],
-                "f1-score": values["f1-score"],
-                "support": int(values["support"]),
-            })
-
-train_report_df = pd.DataFrame(train_report_rows)
-
-train_report_df.to_csv(
-    OUTPUT_DIR / "Viec14_Classification_Report_Train.csv",
+test_report_df.to_csv(
+    OUTPUT_DIR / "Viec14_Classification_Report_Test.csv",
     index=False,
     encoding="utf-8-sig",
 )
-
-# Luu them anh bang PNG cho Classification Report Train (5-Fold CV OOF)
-save_table_png(
-    train_report_df[train_report_df["Du_Lieu"] == "TRAIN (5-Fold CV Out-of-Fold)"][
-        ["Mo_Hinh", "Class", "precision", "recall", "f1-score", "support"]
-    ],
-    "Viec14_Bang_Classification_Report_Train.png",
-    "VIEC 14 - CLASSIFICATION REPORT TREN TRAIN (5-FOLD CV OOF)",
-)
-
-print("\nDA LUU FILE: Viec14_Classification_Report_Train.csv")
-display(train_report_df.round(4))
 
 
 # ============================================================
@@ -1268,8 +1218,8 @@ config_output = {
     "pipeline_imputer": "median",
     "output_directory": str(OUTPUT_DIR),
     "du_lieu_chon_tham_so": "TRAIN only (5-Fold StratifiedKFold, refit='recall')",
-    "vai_tro_tap_test": "Cach ly tuyet doi khoi Viec 14. Danh gia tren Test chi thuc hien o Viec 15 cho model cuoi cung da chot de tranh data leakage.",
-    "classification_report": "Thuc hien tren TRAIN bang 5-Fold CV Out-Of-Fold va Full Train Fit (Viec14_Classification_Report_Train.csv)",
+    "vai_tro_tap_test": "Chi tham khao nang luc tong quat hoa sau khi GridSearchCV da tu dong refit tren Train. Tuyet doi khong dung Test de chon model.",
+    "xac_nhan_quyet_dinh_test": "GHI RO LA CHI DE THAM KHAO, KHONG DUNG DE CHON MODEL",
 }
 
 with open(
@@ -1316,6 +1266,10 @@ for model_name, estimator in best_estimators.items():
 # ============================================================
 
 best_result = results_df.iloc[0]
+
+
+
+
 
 print("\n" + "=" * 75)
 print("KET QUA TOT NHAT THEO BEST CV RECALL (refit='recall' tren TRAIN)")
