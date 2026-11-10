@@ -23,10 +23,10 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         df = pd.DataFrame(X, columns=self.cols)
         df['Glucose_to_Insulin_ratio'] = df['Glucose'] / df['Insulin'].clip(lower=1e-6)
-        df['BMI_category'] = pd.cut(df['BMI'], bins=[0, 18.5, 25.0, 30.0, float('inf')], labels=['Underweight', 'Normal', 'Overweight', 'Obese'], right=False)
-        df['Age_group'] = pd.cut(df['Age'], bins=[0, 35, 55, float('inf')], labels=['Young_Adults', 'Middle_Aged', 'Seniors'], right=False)
-        df['BMI_category'] = pd.Categorical(df['BMI_category'], categories=['Underweight', 'Normal', 'Overweight', 'Obese'])
-        df['Age_group'] = pd.Categorical(df['Age_group'], categories=['Young_Adults', 'Middle_Aged', 'Seniors'])
+        df['BMI_category'] = pd.cut(df['BMI'], bins=[0, 18.5, 25.0, 30.0, float('inf')], labels=['BMI_Low', 'BMI_Normal', 'BMI_High', 'BMI_VeryHigh'], right=False)
+        df['Age_group'] = pd.cut(df['Age'], bins=[0, 35, 55, float('inf')], labels=['Age_Young', 'Age_Middle', 'Age_Senior'], right=False)
+        df['BMI_category'] = pd.Categorical(df['BMI_category'], categories=['BMI_Low', 'BMI_Normal', 'BMI_High', 'BMI_VeryHigh'])
+        df['Age_group'] = pd.Categorical(df['Age_group'], categories=['Age_Young', 'Age_Middle', 'Age_Senior'])
         return pd.get_dummies(df, columns=['BMI_category', 'Age_group'], drop_first=True)
 
 def main():
@@ -70,7 +70,6 @@ def main():
 
     df_results = pd.DataFrame(results)
     
-    # Lấy thuật toán có điểm F1-Score cao nhất làm nhà vô địch
     best_idx = df_results['F1_Mean'].idxmax()
     best_pipeline = df_results.iloc[best_idx]['Pipeline']
     best_method = df_results.iloc[best_idx]['Phương_Pháp']
@@ -78,7 +77,9 @@ def main():
     logger.info(f"KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [{best_method}]")
     
     df_results.drop(columns=['Pipeline']).to_csv('ket_luan_feature_selection.csv', index=False, encoding='utf-8-sig')
-    joblib.dump(best_pipeline, 'feature_pipeline_for_app.pkl')
+    feature_only_steps = best_pipeline.steps[:-1] 
+    feature_only_pipeline = Pipeline(feature_only_steps)
+    joblib.dump(feature_only_pipeline, 'data_preprocessing_pipeline_only.pkl')
     logger.info("Đã xuất file pkl.")
 
 if __name__ == "__main__":

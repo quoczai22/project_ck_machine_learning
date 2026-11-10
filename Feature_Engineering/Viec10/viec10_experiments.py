@@ -22,10 +22,10 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         df = pd.DataFrame(X, columns=self.cols)
         df['Glucose_to_Insulin_ratio'] = df['Glucose'] / df['Insulin'].clip(lower=1e-6)
         bins_bmi = [0, 18.5, 25.0, 30.0, float('inf')]
-        bmi_labels = ['Underweight', 'Normal', 'Overweight', 'Obese']
+        bmi_labels = ['BMI_Low', 'BMI_Normal', 'BMI_High', 'BMI_VeryHigh']
         df['BMI_category'] = pd.cut(df['BMI'], bins=bins_bmi, labels=bmi_labels, right=False)
         bins_age = [0, 35, 55, float('inf')]
-        age_labels = ['Young_Adults', 'Middle_Aged', 'Seniors']
+        age_labels = ['Age_Young', 'Age_Middle', 'Age_Senior']
         df['Age_group'] = pd.cut(df['Age'], bins=bins_age, labels=age_labels, right=False)
         df['BMI_category'] = pd.Categorical(df['BMI_category'], categories=bmi_labels)
         df['Age_group'] = pd.Categorical(df['Age_group'], categories=age_labels)
