@@ -1,2 +1,2 @@
-Target_Column,Total_Rows,Train_Rows,Test_Rows,Imputer_Fit_Train_Only,Scaler_Mean_Fit_Train_Only,Scaler_Scale_Fit_Train_Only,Test_Prediction_Does_Not_Refit,Test_Accuracy,Audit_Status
-Class,768,614,154,True,True,True,True,0.7727272727272727,PASS
+﻿Target_Column,Total_Rows,Train_Rows,Test_Rows,Imputer_Fit_Train_Only,Scaler_Mean_Fit_Train_Only,Scaler_Scale_Fit_Train_Only,Test_Prediction_Does_Not_Refit,Test_Accuracy,Audit_Status
+Outcome,768,614,154,True,True,True,True,0.7727272727272727,PASS
