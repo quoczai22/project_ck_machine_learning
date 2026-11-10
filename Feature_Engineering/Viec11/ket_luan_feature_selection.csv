@@ -1,11 +1,4 @@
-<<<<<<< HEAD
-﻿Phương_Pháp,F1_Mean,ROC_AUC_Mean,PR_AUC_Mean,Recall_Mean,Feature_Được_Chọn
-Không chọn (Giữ toàn bộ),0.6701,0.8511,0.7558,0.6123,Tất cả
-f_classif (Chọn top 8),0.6588,0.8365,0.7449,0.5932,"Glucose, SkinThickness, Insulin, BMI, Age, BMI_category_BMI_Normal, BMI_category_BMI_VeryHigh, Age_group_Age_Middle"
-mutual_info (Chọn top 8),0.6625,0.8422,0.7461,0.598,"Pregnancies, Glucose, Insulin, BMI, Age, BMI_category_BMI_High, BMI_category_BMI_VeryHigh, Age_group_Age_Middle"
-=======
 ﻿Phương_Pháp,Recall_Mean,Recall_Std,F1_Mean,ROC_AUC_Mean,PR_AUC_Mean,Feature_Được_Chọn
 Không chọn (Giữ toàn bộ),0.6123,0.049,0.6701,0.8511,0.7558,Tất cả
 f_classif (Chọn top 8),0.5932,0.0451,0.6588,0.8365,0.7449,"Glucose, SkinThickness, Insulin, BMI, Age, BMI_category_BMI_Normal, BMI_category_BMI_VeryHigh, Age_group_Age_Middle"
 mutual_info (Chọn top 8),0.598,0.0355,0.6625,0.8422,0.7461,"Pregnancies, Glucose, Insulin, BMI, Age, BMI_category_BMI_High, BMI_category_BMI_VeryHigh, Age_group_Age_Middle"
->>>>>>> 86ac316348d356ded4f69f36ec8d6a042586c71f
