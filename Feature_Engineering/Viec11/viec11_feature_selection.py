@@ -44,8 +44,12 @@ def main():
         
         pipeline = Pipeline(steps)
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+<<<<<<< HEAD
         # Bổ sung Recall
         scoring = ['f1', 'roc_auc', 'average_precision', 'recall']
+=======
+        scoring = ['recall', 'f1', 'roc_auc', 'average_precision']
+>>>>>>> 86ac316348d356ded4f69f36ec8d6a042586c71f
         cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=scoring)
         
         pipeline.fit(X_train_raw, y_train)
@@ -54,6 +58,8 @@ def main():
             
         return {
             'Phương_Pháp': selector_name,
+            'Recall_Mean': round(cv_results['test_recall'].mean(), 4),
+            'Recall_Std': round(cv_results['test_recall'].std(), 4),
             'F1_Mean': round(cv_results['test_f1'].mean(), 4),
             'ROC_AUC_Mean': round(cv_results['test_roc_auc'].mean(), 4),
             'PR_AUC_Mean': round(cv_results['test_average_precision'].mean(), 4),
@@ -72,11 +78,20 @@ def main():
 
     df_results = pd.DataFrame(results)
     
-    best_idx = df_results['F1_Mean'].idxmax()
+    # Quy tac da chot (bien ban 0,03): F1 va ROC-AUC khong thap hon muc tot nhat 0,03;
+    # trong cac phuong an dat dieu kien, chon Recall cao nhat; hoa thi xet F1, roi ROC-AUC.
+    TOLERANCE = 0.03
+    eligible = df_results[
+        (df_results['F1_Mean'] >= df_results['F1_Mean'].max() - TOLERANCE)
+        & (df_results['ROC_AUC_Mean'] >= df_results['ROC_AUC_Mean'].max() - TOLERANCE)
+    ]
+    best_idx = eligible.sort_values(
+        ['Recall_Mean', 'F1_Mean', 'ROC_AUC_Mean'], ascending=False, kind='stable'
+    ).index[0]
     best_pipeline = df_results.iloc[best_idx]['Pipeline']
     best_method = df_results.iloc[best_idx]['Phương_Pháp']
     
-    logger.info(f"KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [{best_method}]")
+    logger.info(f"KẾT LUẬN: Phương pháp được chọn theo quy tắc Recall-first là [{best_method}]")
     
     df_results.drop(columns=['Pipeline']).to_csv('ket_luan_feature_selection.csv', index=False, encoding='utf-8-sig')
     
