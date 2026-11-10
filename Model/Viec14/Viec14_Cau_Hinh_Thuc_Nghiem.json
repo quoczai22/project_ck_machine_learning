@@ -1,0 +1,39 @@
+{
+    "dataset": "Pima-Indians-Diabetes/data/raw/pima-indians-diabetes.csv",
+    "target": "Outcome",
+    "random_state": 42,
+    "test_size": 0.2,
+    "cv": "StratifiedKFold",
+    "n_splits": 5,
+    "shuffle": true,
+    "scoring": [
+        "accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "roc_auc"
+    ],
+    "refit_metric": "recall",
+    "feature_scenario": "2_Them_Ratio",
+    "features": [
+        "Pregnancies",
+        "Glucose",
+        "BloodPressure",
+        "SkinThickness",
+        "Insulin",
+        "BMI",
+        "DiabetesPedigreeFunction",
+        "Age",
+        "Glucose_BMI_Ratio"
+    ],
+    "class_weight_comparison": [
+        null,
+        "balanced"
+    ],
+    "smote_used": false,
+    "pipeline_imputer": "median",
+    "output_directory": "Model/Viec14",
+    "du_lieu_chon_tham_so": "TRAIN only (5-Fold StratifiedKFold, refit='recall')",
+    "vai_tro_tap_test": "Khong danh gia tren Test trong Viec 14; de danh gia model cuoi cung o Viec 15.",
+    "xac_nhan_quyet_dinh_test": "TEST KHONG DUOC DUNG TRONG VIEC 14"
+}
