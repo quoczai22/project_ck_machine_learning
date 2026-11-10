@@ -29,3 +29,9 @@
 2026-11-10 09:07:48,466 - Viec11_Selection - INFO - Đánh giá: f_classif (Chọn top 8)
 2026-11-10 09:07:48,591 - Viec11_Selection - INFO - Đánh giá: mutual_info (Chọn top 8)
 2026-11-10 09:07:48,905 - Viec11_Selection - INFO - KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [Không chọn (Giữ toàn bộ)]
+2026-11-10 20:26:14,439 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC, RECALL
+2026-11-10 20:26:14,441 - Viec11_Selection - INFO - Đánh giá: Không chọn (Giữ toàn bộ)
+2026-11-10 20:26:14,614 - Viec11_Selection - INFO - Đánh giá: f_classif (Chọn top 8)
+2026-11-10 20:26:14,751 - Viec11_Selection - INFO - Đánh giá: mutual_info (Chọn top 8)
+2026-11-10 20:26:15,060 - Viec11_Selection - INFO - KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [Không chọn (Giữ toàn bộ)]
+2026-11-10 20:26:15,063 - Viec11_Selection - INFO - Đã xuất file pkl.

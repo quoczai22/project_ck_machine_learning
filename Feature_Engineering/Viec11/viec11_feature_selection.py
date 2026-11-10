@@ -30,7 +30,7 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         return pd.get_dummies(df, columns=['BMI_category', 'Age_group'], drop_first=True)
 
 def main():
-    logger.info("BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC")
+    logger.info("BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC, RECALL")
     path_to_viec7 = '../../Tien_Xu_Li/Viec_7/'
     X_train_raw = pd.read_csv(f'{path_to_viec7}X_train.csv')
     y_train = pd.read_csv(f'{path_to_viec7}y_train.csv').squeeze()
@@ -44,7 +44,8 @@ def main():
         
         pipeline = Pipeline(steps)
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-        scoring = ['f1', 'roc_auc', 'average_precision']
+        # Bổ sung Recall
+        scoring = ['f1', 'roc_auc', 'average_precision', 'recall']
         cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=scoring)
         
         pipeline.fit(X_train_raw, y_train)
@@ -56,6 +57,7 @@ def main():
             'F1_Mean': round(cv_results['test_f1'].mean(), 4),
             'ROC_AUC_Mean': round(cv_results['test_roc_auc'].mean(), 4),
             'PR_AUC_Mean': round(cv_results['test_average_precision'].mean(), 4),
+            'Recall_Mean': round(cv_results['test_recall'].mean(), 4),
             'Feature_Được_Chọn': kept_features,
             'Pipeline': pipeline
         }
@@ -78,10 +80,11 @@ def main():
     
     df_results.drop(columns=['Pipeline']).to_csv('ket_luan_feature_selection.csv', index=False, encoding='utf-8-sig')
     
+    # Xóa thuật toán Logistic Regression, chỉ lưu Pipeline tiền xử lý
     feature_only_steps = best_pipeline.steps[:-1] 
     feature_only_pipeline = Pipeline(feature_only_steps)
-    
     joblib.dump(feature_only_pipeline, 'data_preprocessing_pipeline_only.pkl')
+    logger.info("Đã xuất file pkl.")
 
 if __name__ == "__main__":
     main()

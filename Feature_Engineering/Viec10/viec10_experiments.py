@@ -39,7 +39,7 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
         return X[[c for c in X.columns if c in self.cols_to_keep]]
 
 def main():
-    logger.info("BẮT ĐẦU CÔNG VIỆC 10: THỬ NGHIỆM FEATURE VỚI METRIC F1, ROC-AUC, PR-AUC")
+    logger.info("BẮT ĐẦU CÔNG VIỆC 10: THỬ NGHIỆM FEATURE VỚI METRIC F1, ROC-AUC, PR-AUC, RECALL")
     path_to_viec7 = '../../Tien_Xu_Li/Viec_7/'
     X_train_raw = pd.read_csv(f'{path_to_viec7}X_train.csv')
     y_train = pd.read_csv(f'{path_to_viec7}y_train.csv').squeeze()
@@ -56,8 +56,8 @@ def main():
         ])
         
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-        # THAY ĐỔI METRIC TẠI ĐÂY
-        scoring = ['f1', 'roc_auc', 'average_precision']
+        # Bổ sung Recall
+        scoring = ['f1', 'roc_auc', 'average_precision', 'recall']
         cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=scoring)
         
         return {
@@ -65,6 +65,7 @@ def main():
             'F1_Mean': round(cv_results['test_f1'].mean(), 4),
             'ROC_AUC_Mean': round(cv_results['test_roc_auc'].mean(), 4),
             'PR_AUC_Mean': round(cv_results['test_average_precision'].mean(), 4),
+            'Recall_Mean': round(cv_results['test_recall'].mean(), 4),
             'Feature_Bị_Loại': removed_cols
         }
 

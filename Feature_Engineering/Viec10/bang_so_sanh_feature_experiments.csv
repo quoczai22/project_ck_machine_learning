@@ -1,6 +1,6 @@
-﻿Tên_Thử_Nghiệm,F1_Mean,ROC_AUC_Mean,PR_AUC_Mean,Feature_Bị_Loại
-1. Baseline,0.6545,0.8434,0.7471,Không có
-2. Thêm Ratio,0.6654,0.8442,0.7521,Không có
-"3. Thêm Category (BMI, Age)",0.6724,0.8522,0.7525,Không có
-4. Tất cả Feature,0.6701,0.8511,0.7558,Không có
-5. Tất cả (Loại SkinThickness),0.6789,0.8526,0.7544,SkinThickness
+﻿Tên_Thử_Nghiệm,F1_Mean,ROC_AUC_Mean,PR_AUC_Mean,Recall_Mean,Feature_Bị_Loại
+1. Baseline,0.6545,0.8434,0.7471,0.5748,Không có
+2. Thêm Ratio,0.6654,0.8442,0.7521,0.5936,Không có
+"3. Thêm Category (BMI, Age)",0.6724,0.8522,0.7525,0.6074,Không có
+4. Tất cả Feature,0.6701,0.8511,0.7558,0.6123,Không có
+5. Tất cả (Loại SkinThickness),0.6789,0.8526,0.7544,0.6215,SkinThickness

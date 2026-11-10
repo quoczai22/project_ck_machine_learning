@@ -37,24 +37,25 @@ def main():
         ('model', LogisticRegression(max_iter=1000, random_state=42))
     ])
 
-    # CẬP NHẬT METRIC MỚI THEO YÊU CẦU NT
-    logger.info("Chạy Stratified 5-Fold CV với metric: F1, ROC-AUC, PR-AUC...")
+    # CẬP NHẬT METRIC: Thêm 'recall'
+    logger.info("Chạy Stratified 5-Fold CV với metric: F1, ROC-AUC, PR-AUC, Recall...")
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    scoring_metrics = ['f1', 'roc_auc', 'average_precision'] # average_precision chính là PR-AUC
+    scoring_metrics = ['f1', 'roc_auc', 'average_precision', 'recall'] 
     
     cv_results = cross_validate(baseline_pipeline, X_train, y_train, cv=cv, scoring=scoring_metrics)
     
     mean_f1 = cv_results['test_f1'].mean()
     mean_roc = cv_results['test_roc_auc'].mean()
     mean_pr = cv_results['test_average_precision'].mean()
+    mean_recall = cv_results['test_recall'].mean()
     
-    logger.info(f"Kết quả CV - F1: {mean_f1:.4f} | ROC-AUC: {mean_roc:.4f} | PR-AUC: {mean_pr:.4f}")
+    logger.info(f"Kết quả CV - F1: {mean_f1:.4f} | ROC-AUC: {mean_roc:.4f} | PR-AUC: {mean_pr:.4f} | Recall: {mean_recall:.4f}")
 
     # XUẤT BẢNG METRIC
     metric_df = pd.DataFrame({
-        'Metric': ['F1-Score', 'ROC-AUC', 'PR-AUC'], 
-        'Mean_CV': [mean_f1, mean_roc, mean_pr], 
-        'Std_CV': [cv_results['test_f1'].std(), cv_results['test_roc_auc'].std(), cv_results['test_average_precision'].std()]
+        'Metric': ['F1-Score', 'ROC-AUC', 'PR-AUC', 'Recall'], 
+        'Mean_CV': [mean_f1, mean_roc, mean_pr, mean_recall], 
+        'Std_CV': [cv_results['test_f1'].std(), cv_results['test_roc_auc'].std(), cv_results['test_average_precision'].std(), cv_results['test_recall'].std()]
     })
     metric_df.to_csv('bang_metric_cv_baseline.csv', index=False)
     
