@@ -44,12 +44,7 @@ def main():
         
         pipeline = Pipeline(steps)
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-<<<<<<< HEAD
-        # Bổ sung Recall
-        scoring = ['f1', 'roc_auc', 'average_precision', 'recall']
-=======
         scoring = ['recall', 'f1', 'roc_auc', 'average_precision']
->>>>>>> 86ac316348d356ded4f69f36ec8d6a042586c71f
         cv_results = cross_validate(pipeline, X_train_raw, y_train, cv=cv, scoring=scoring)
         
         pipeline.fit(X_train_raw, y_train)
@@ -63,7 +58,6 @@ def main():
             'F1_Mean': round(cv_results['test_f1'].mean(), 4),
             'ROC_AUC_Mean': round(cv_results['test_roc_auc'].mean(), 4),
             'PR_AUC_Mean': round(cv_results['test_average_precision'].mean(), 4),
-            'Recall_Mean': round(cv_results['test_recall'].mean(), 4),
             'Feature_Được_Chọn': kept_features,
             'Pipeline': pipeline
         }
