@@ -678,7 +678,6 @@ search_results = []
 cv_results_all = []
 best_estimators = {}
 best_params_rows = []
-test_predictions = []
 
 for model_name, config in MODEL_CONFIGS.items():
 
@@ -718,25 +717,6 @@ for model_name, config in MODEL_CONFIGS.items():
     best_cv_f1 = cv_data["mean_test_f1"][best_idx]
     best_cv_auc = cv_data["mean_test_roc_auc"][best_idx]
 
-    y_pred = best_model.predict(X_test)
-
-    if hasattr(best_model, "predict_proba"):
-        y_score = best_model.predict_proba(X_test)[:, 1]
-    else:
-        y_score = best_model.decision_function(X_test)
-
-    test_accuracy = accuracy_score(y_test, y_pred)
-    test_precision = precision_score(
-        y_test, y_pred, zero_division=0
-    )
-    test_recall = recall_score(
-        y_test, y_pred, zero_division=0
-    )
-    test_f1 = f1_score(
-        y_test, y_pred, zero_division=0
-    )
-    test_auc = roc_auc_score(y_test, y_score)
-
     best_class_weight = search.best_params_.get(
         "model__class_weight",
         None,
@@ -757,12 +737,6 @@ for model_name, config in MODEL_CONFIGS.items():
         "Best_CV_Recall": best_cv_recall,
         "Best_CV_F1": best_cv_f1,
         "Best_CV_ROC_AUC": best_cv_auc,
-        "Test_Accuracy": test_accuracy,
-        "Test_Precision": test_precision,
-        "Test_Recall": test_recall,
-        "Test_F1": test_f1,
-        "Test_ROC_AUC": test_auc,
-        "Vai_Tro_Test": TEST_ROLE_NOTE,
         "Du_Lieu_Chon_Tham_So": "TRAIN 5-Fold CV (refit='recall')",
         "Best_Params": json.dumps(
             search.best_params_,
@@ -791,22 +765,11 @@ for model_name, config in MODEL_CONFIGS.items():
 
     cv_results_all.append(model_cv_df)
 
-    test_predictions.append({
-        "Mo_Hinh": model_name,
-        "y_true": np.asarray(y_test),
-        "y_pred": np.asarray(y_pred),
-        "y_score": np.asarray(y_score),
-    })
-
     print("\nTham so tot nhat (Chon tren TRAIN 5-Fold CV):")
     print(search.best_params_)
     print(f"Best CV Recall:  {best_cv_recall:.4f}  <-- Metric quyet dinh")
     print(f"Best CV F1:      {best_cv_f1:.4f}")
     print(f"Best CV ROC-AUC: {best_cv_auc:.4f}")
-    print(f"[THAM KHAO - Khong dung chon model] Test Recall:   {test_recall:.4f}")
-    print(f"[THAM KHAO - Khong dung chon model] Test F1:       {test_f1:.4f}")
-    print(f"[THAM KHAO - Khong dung chon model] Test ROC-AUC:  {test_auc:.4f}")
-    print(f"[THAM KHAO - Khong dung chon model] Test Accuracy: {test_accuracy:.4f}")
 
 
 # ============================================================
@@ -858,11 +821,6 @@ display(
             "Best_CV_F1",
             "Best_CV_ROC_AUC",
             "Best_CV_Accuracy",
-            "Test_Recall",
-            "Test_F1",
-            "Test_ROC_AUC",
-            "Test_Accuracy",
-            "Vai_Tro_Test",
         ]
     ].round(4)
 )
@@ -1047,10 +1005,6 @@ save_table_png(
             "Best_CV_F1",
             "Best_CV_ROC_AUC",
             "Best_CV_Accuracy",
-            "Test_Recall",
-            "Test_F1",
-            "Test_ROC_AUC",
-            "Test_Accuracy",
         ]
     ],
     "Viec14_Bang_Tong_Hop_GridSearchCV.png",
@@ -1207,38 +1161,6 @@ for metric_col, metric_label, filename in [
 
 
 # ============================================================
-# 13. LUU CLASSIFICATION REPORT TREN TEST SET
-# ============================================================
-
-test_report_rows = []
-
-for item in test_predictions:
-    report = classification_report(
-        item["y_true"],
-        item["y_pred"],
-        output_dict=True,
-        zero_division=0,
-    )
-
-    for label, values in report.items():
-        if isinstance(values, dict):
-            test_report_rows.append({
-                "Mo_Hinh": item["Mo_Hinh"],
-                "Class": label,
-                "Vai_Tro": "Chi tham khao doi chung - Khong dung chon model",
-                **values,
-            })
-
-test_report_df = pd.DataFrame(test_report_rows)
-
-test_report_df.to_csv(
-    OUTPUT_DIR / "Viec14_Classification_Report_Test.csv",
-    index=False,
-    encoding="utf-8-sig",
-)
-
-
-# ============================================================
 # 14. LUU CAU HINH THUC NGHIEM
 # ============================================================
 
@@ -1266,7 +1188,6 @@ config_output = {
     "output_directory": str(OUTPUT_DIR),
     "du_lieu_chon_tham_so": "TRAIN only (5-Fold StratifiedKFold, refit='recall')",
     "vai_tro_tap_test": "Chi tham khao nang luc tong quat hoa sau khi GridSearchCV da tu dong refit tren Train. Tuyet doi khong dung Test de chon model.",
-    "xac_nhan_quyet_dinh_test": "GHI RO LA CHI DE THAM KHAO, KHONG DUNG DE CHON MODEL",
 }
 
 with open(
@@ -1325,13 +1246,6 @@ print(f"Best CV Recall:   {best_result['Best_CV_Recall']:.4f}  <-- Metric quyet 
 print(f"Best CV F1:       {best_result['Best_CV_F1']:.4f}")
 print(f"Best CV ROC-AUC:  {best_result['Best_CV_ROC_AUC']:.4f}")
 print(f"Best CV Accuracy: {best_result['Best_CV_Accuracy']:.4f}")
-print("\n[CHU Y VE TAP TEST - CHI DUNG THAM KHAO]:")
-print("Cac chi so Test duoi day CHI MANG TINH CHAT THAM KHAO NANG LUC TONG QUAT HOA.")
-print("Tuyet doi khong su dung Test de chon model hay tinh chinh sieu tham so.")
-print(f"Test Recall (tham khao):   {best_result['Test_Recall']:.4f}")
-print(f"Test F1 (tham khao):       {best_result['Test_F1']:.4f}")
-print(f"Test ROC-AUC (tham khao):  {best_result['Test_ROC_AUC']:.4f}")
-print(f"Test Accuracy (tham khao): {best_result['Test_Accuracy']:.4f}")
 
 print("\nBang tong hop:")
 display(results_df.round(4))
