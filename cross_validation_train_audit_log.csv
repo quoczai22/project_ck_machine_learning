@@ -1,0 +1,6 @@
+Target_Column,Fold,Fold_Train_Rows,Fold_Validation_Rows,Imputer_Fit_Fold_Train_Only,Scaler_Mean_Fit_Fold_Train_Only,Scaler_Scale_Fit_Fold_Train_Only,Validation_Accuracy,Audit_Status
+Class,1,491,123,True,True,True,0.7642276422764228,PASS
+Class,2,491,123,True,True,True,0.7398373983739838,PASS
+Class,3,491,123,True,True,True,0.7886178861788617,PASS
+Class,4,491,123,True,True,True,0.7560975609756098,PASS
+Class,5,492,122,True,True,True,0.7704918032786885,PASS
