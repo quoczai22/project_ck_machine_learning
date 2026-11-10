@@ -41,6 +41,7 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
     roc_auc_score,
+    classification_report,
 )
 
 warnings.filterwarnings("ignore")
@@ -1237,7 +1238,11 @@ display(train_report_df.round(4))
 
 
 # ============================================================
+<<<<<<< HEAD
 # 13. LUU CAU HINH THUC NGHIEM
+=======
+# 14. LUU CAU HINH THUC NGHIEM
+>>>>>>> d360520 (Update)
 # ============================================================
 
 config_output = {
@@ -1281,7 +1286,7 @@ with open(
 
 
 # ============================================================
-# 14. LUU MO HINH TOT NHAT - KHONG TAO THU MUC MODELS
+# 15. LUU MO HINH TOT NHAT - KHONG TAO THU MUC MODELS
 # ============================================================
 
 # Luu truc tiep cac file joblib trong Model/Viec14.
@@ -1307,7 +1312,7 @@ for model_name, estimator in best_estimators.items():
 
 
 # ============================================================
-# 15. KET LUAN TU KET QUA
+# 16. KET LUAN TU KET QUA
 # ============================================================
 
 best_result = results_df.iloc[0]
@@ -1347,7 +1352,7 @@ display(
 
 
 # ============================================================
-# 16. LIET KE CAC FILE BAN GIAO
+# 17. LIET KE CAC FILE BAN GIAO
 # ============================================================
 
 print("\n" + "=" * 75)
