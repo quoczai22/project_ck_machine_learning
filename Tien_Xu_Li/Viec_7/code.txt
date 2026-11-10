@@ -8,6 +8,9 @@
 import pandas as pd
 import numpy as np
 import io
+import hashlib
+import time
+from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -33,7 +36,11 @@ if not uploaded:
 
 filename = next(iter(uploaded.keys()))
 
-df = pd.read_csv(io.BytesIO(uploaded[filename]))
+run_started_at = datetime.now().astimezone().isoformat(timespec="seconds")
+start_time = time.perf_counter()
+input_file_bytes = uploaded[filename]
+dataset_sha256 = hashlib.sha256(input_file_bytes).hexdigest()
+df = pd.read_csv(io.BytesIO(input_file_bytes))
 
 print(f">>> Đã đọc: {df.shape[0]} dòng, {df.shape[1]} cột")
 
@@ -756,6 +763,14 @@ result_table = pd.DataFrame({
 display(result_table)
 
 
+run_finished_at = datetime.now().astimezone().isoformat(timespec="seconds")
+result_table["Target_Column"] = "Outcome"
+result_table["Input_File"] = filename
+result_table["Run_Started_At"] = run_started_at
+result_table["Run_Finished_At"] = run_finished_at
+result_table["Execution_Duration_Seconds"] = round(time.perf_counter() - start_time, 4)
+result_table["Dataset_SHA256"] = dataset_sha256
+
 # Xuất Audit Log Việc 7
 audit_file = "viet7_audit_log_12_tests.csv"
 
@@ -766,6 +781,15 @@ result_table.to_csv(
 )
 
 print(f"\nĐã lưu: {audit_file}")
+
+with open(audit_file, "rb") as log_file:
+    audit_sha256 = hashlib.sha256(log_file.read()).hexdigest()
+with open(audit_file + ".sha256", "w", encoding="utf-8") as checksum_file:
+    checksum_file.write(f"{audit_sha256}  {audit_file}\n")
+print(f"Input: {filename} | SHA-256: {dataset_sha256}")
+print(f"Đã lưu: {audit_file}.sha256")
+files.download(audit_file)
+files.download(audit_file + ".sha256")
 
 print("\n" + "=" * 70)
 

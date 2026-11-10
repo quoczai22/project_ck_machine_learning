@@ -8,12 +8,15 @@
 import pandas as pd
 import numpy as np
 import io
+import hashlib
+import time
+from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 from google.colab import files
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_predict
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
@@ -44,7 +47,11 @@ if not uploaded:
 
 filename = next(iter(uploaded.keys()))
 
-df = pd.read_csv(io.BytesIO(uploaded[filename]))
+run_started_at = datetime.now().astimezone().isoformat(timespec="seconds")
+start_time = time.perf_counter()
+input_file_bytes = uploaded[filename]
+dataset_sha256 = hashlib.sha256(input_file_bytes).hexdigest()
+df = pd.read_csv(io.BytesIO(input_file_bytes))
 
 print(f">>> Đã đọc: {df.shape[0]} dòng, {df.shape[1]} cột")
 
@@ -318,22 +325,23 @@ print(">>> Random Forest chỉ dùng để kiểm tra Pipeline, không phải mo
 
 
 # ==============================================================================
-# PHẦN 4: ĐÁNH GIÁ VÀ CONFUSION MATRIX (VIỆC 6)
+# PHẦN 4: ĐÁNH GIÁ DEMO BẰNG CV TRÊN TRAIN (VIỆC 6)
 # ==============================================================================
 
-y_pred = preprocessing_pipeline.predict(X_test)
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+y_pred_cv = cross_val_predict(preprocessing_pipeline, X_train, y_train, cv=cv)
 
 print("=" * 60)
-print("KẾT QUẢ DỰ ĐOÁN")
+print("KẾT QUẢ 5-FOLD CV TRÊN TRAIN (OUT-OF-FOLD)")
 print("=" * 60)
 
-print(f"Độ chính xác: {accuracy_score(y_test, y_pred):.4f}\n")
+print(f"Độ chính xác: {accuracy_score(y_train, y_pred_cv):.4f}\n")
 
-print(classification_report(y_test, y_pred))
+print(classification_report(y_train, y_pred_cv))
 
 plt.figure(figsize=(6, 5))
 
-cm = confusion_matrix(y_test, y_pred)
+cm = confusion_matrix(y_train, y_pred_cv)
 
 disp = ConfusionMatrixDisplay(
     confusion_matrix=cm,
@@ -345,7 +353,7 @@ disp = ConfusionMatrixDisplay(
 
 disp.plot(cmap="Blues", ax=plt.gca())
 
-plt.title("Ma trận nhầm lẫn")
+plt.title("Ma trận nhầm lẫn 5-fold CV trên Train")
 plt.grid(False)
 plt.show()
 
@@ -523,7 +531,7 @@ stats_before = imputer_pipeline.statistics_.copy()
 
 mean_before = scaler_pipeline.mean_.copy()
 
-_ = preprocessing_pipeline.predict(X_test)
+_ = preprocessing_pipeline[:-1].transform(X_test)
 
 stats_after = imputer_pipeline.statistics_.copy()
 
@@ -1136,6 +1144,14 @@ display(result_table)
 
 output_file = "viet8_leakage_audit_log.csv"
 
+run_finished_at = datetime.now().astimezone().isoformat(timespec="seconds")
+result_table["Target_Column"] = "Outcome"
+result_table["Input_File"] = filename
+result_table["Run_Started_At"] = run_started_at
+result_table["Run_Finished_At"] = run_finished_at
+result_table["Execution_Duration_Seconds"] = round(time.perf_counter() - start_time, 4)
+result_table["Dataset_SHA256"] = dataset_sha256
+
 result_table.to_csv(
     output_file,
     index=False,
@@ -1144,4 +1160,12 @@ result_table.to_csv(
 
 print(f"\nĐã xuất Audit Log: {output_file}")
 
+with open(output_file, "rb") as log_file:
+    audit_sha256 = hashlib.sha256(log_file.read()).hexdigest()
+with open(output_file + ".sha256", "w", encoding="utf-8") as checksum_file:
+    checksum_file.write(f"{audit_sha256}  {output_file}\n")
+print(f"Input: {filename} | SHA-256: {dataset_sha256}")
+print(f"Đã xuất: {output_file}.sha256")
+
 files.download(output_file)
+files.download(output_file + ".sha256")
