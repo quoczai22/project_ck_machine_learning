@@ -36,6 +36,7 @@ from sklearn.svm import SVC
 
 from sklearn.metrics import (
     accuracy_score,
+    classification_report,
     precision_score,
     recall_score,
     f1_score,
@@ -1240,7 +1241,7 @@ display(train_report_df.round(4))
 # ============================================================
 
 config_output = {
-    "dataset": str(DATA_PATH.relative_to(PROJECT_ROOT)),
+    "dataset": DATA_PATH.relative_to(PROJECT_ROOT).as_posix(),
     "target": TARGET_COL,
     "random_state": RANDOM_STATE,
     "test_size": TEST_SIZE,
@@ -1260,7 +1261,7 @@ config_output = {
     "class_weight_comparison": [None, "balanced"],
     "smote_used": False,
     "pipeline_imputer": "median",
-    "output_directory": str(OUTPUT_DIR.relative_to(PROJECT_ROOT)),
+    "output_directory": OUTPUT_DIR.relative_to(PROJECT_ROOT).as_posix(),
     "du_lieu_chon_tham_so": "TRAIN only (5-Fold StratifiedKFold, refit='recall')",
     "vai_tro_tap_test": "Khong danh gia tren Test trong Viec 14; de danh gia model cuoi cung o Viec 15.",
     "xac_nhan_quyet_dinh_test": "TEST KHONG DUOC DUNG TRONG VIEC 14",
