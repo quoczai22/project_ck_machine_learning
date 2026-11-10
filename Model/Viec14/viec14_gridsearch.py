@@ -25,7 +25,6 @@ from sklearn.model_selection import (
     train_test_split,
     StratifiedKFold,
     GridSearchCV,
-    cross_val_predict,
 )
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
@@ -40,7 +39,6 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
     roc_auc_score,
-    classification_report,
 )
 
 warnings.filterwarnings("ignore")
@@ -57,8 +55,8 @@ N_JOBS = 1
 
 # ============================================================
 # QUYET DINH PROTOCOL VIEC 14:
-# Toan bo qua trinh GridSearchCV, tim tham so toi uu va danh gia
-# classification report duoc thuc hien 100% tren tap TRAIN (5-Fold Stratified CV).
+# Toan bo qua trinh GridSearchCV va tim tham so toi uu duoc
+# thuc hien 100% tren tap TRAIN (5-Fold Stratified CV).
 # Tap TEST duoc cach ly tuyet doi (khong danh gia trong Viec 14) de tranh data leakage.
 # Danh gia tren Test set chi duoc thuc hien o Viec 15 cho model cuoi cung duoc chon.
 # ============================================================
@@ -71,12 +69,7 @@ except NameError:
 
 def find_project_root(start):
     for path in [start, *start.parents]:
-        if (path / "Feature_Engineering").is_dir():
-            return path
-        if (
-            (path / "Model").is_dir()
-            and (path / "Tien_Xu_Li").is_dir()
-        ):
+        if (path / "Model" / "Viec14" / "viec14_gridsearch.py").is_file():
             return path
     return start
 
@@ -145,6 +138,14 @@ def normalize_name(name):
 
 
 def read_csv_robust(path):
+    # Ban CSV Pima goc trong repo khong co header.
+    raw = pd.read_csv(path, header=None)
+    if raw.shape[1] == len(BASE_FEATURES) + 1 and pd.to_numeric(
+        raw.iloc[0], errors="coerce"
+    ).notna().all():
+        raw.columns = BASE_FEATURES + ["Outcome"]
+        return raw
+
     for separator in [None, ",", ";", "\t"]:
         try:
             if separator is None:
@@ -213,6 +214,9 @@ def valid_raw_dataset(path):
 
 def find_dataset():
     preferred = [
+        PROJECT_ROOT / "Pima-Indians-Diabetes" / "data" / "raw"
+        / "pima-indians-diabetes.csv",
+
         PROJECT_ROOT / "Model" / "Tien_Xu_Li"
         / "pima-indians-diabetes.csv",
 
@@ -1160,43 +1164,11 @@ for metric_col, metric_label, filename in [
 
 
 # ============================================================
-# 13. LUU CLASSIFICATION REPORT TREN TEST SET
-# ============================================================
-
-test_report_rows = []
-
-for item in test_predictions:
-    report = classification_report(
-        item["y_true"],
-        item["y_pred"],
-        output_dict=True,
-        zero_division=0,
-    )
-
-    for label, values in report.items():
-        if isinstance(values, dict):
-            test_report_rows.append({
-                "Mo_Hinh": item["Mo_Hinh"],
-                "Class": label,
-                "Vai_Tro": "Chi tham khao doi chung - Khong dung chon model",
-                **values,
-            })
-
-test_report_df = pd.DataFrame(test_report_rows)
-
-test_report_df.to_csv(
-    OUTPUT_DIR / "Viec14_Classification_Report_Test.csv",
-    index=False,
-    encoding="utf-8-sig",
-)
-
-
-# ============================================================
-# 14. LUU CAU HINH THUC NGHIEM
+# 13. LUU CAU HINH THUC NGHIEM
 # ============================================================
 
 config_output = {
-    "dataset": str(DATA_PATH),
+    "dataset": str(DATA_PATH.relative_to(PROJECT_ROOT)),
     "target": TARGET_COL,
     "random_state": RANDOM_STATE,
     "test_size": TEST_SIZE,
@@ -1216,10 +1188,10 @@ config_output = {
     "class_weight_comparison": [None, "balanced"],
     "smote_used": False,
     "pipeline_imputer": "median",
-    "output_directory": str(OUTPUT_DIR),
+    "output_directory": str(OUTPUT_DIR.relative_to(PROJECT_ROOT)),
     "du_lieu_chon_tham_so": "TRAIN only (5-Fold StratifiedKFold, refit='recall')",
-    "vai_tro_tap_test": "Chi tham khao nang luc tong quat hoa sau khi GridSearchCV da tu dong refit tren Train. Tuyet doi khong dung Test de chon model.",
-    "xac_nhan_quyet_dinh_test": "GHI RO LA CHI DE THAM KHAO, KHONG DUNG DE CHON MODEL",
+    "vai_tro_tap_test": "Khong danh gia tren Test trong Viec 14; de danh gia model cuoi cung o Viec 15.",
+    "xac_nhan_quyet_dinh_test": "TEST KHONG DUOC DUNG TRONG VIEC 14",
 }
 
 with open(
@@ -1236,7 +1208,7 @@ with open(
 
 
 # ============================================================
-# 15. LUU MO HINH TOT NHAT - KHONG TAO THU MUC MODELS
+# 14. LUU MO HINH TOT NHAT - KHONG TAO THU MUC MODELS
 # ============================================================
 
 # Luu truc tiep cac file joblib trong Model/Viec14.
@@ -1262,7 +1234,7 @@ for model_name, estimator in best_estimators.items():
 
 
 # ============================================================
-# 16. KET LUAN TU KET QUA
+# 15. KET LUAN TU KET QUA
 # ============================================================
 
 best_result = results_df.iloc[0]
@@ -1302,7 +1274,7 @@ display(
 
 
 # ============================================================
-# 17. LIET KE CAC FILE BAN GIAO
+# 16. LIET KE CAC FILE BAN GIAO
 # ============================================================
 
 print("\n" + "=" * 75)

@@ -1,6 +1,6 @@
 {
-    "dataset": "C:\\HocMay\\Do_An_Hoc_May\\Tien_Xu_Li\\Viec_5\\pima_indians_zero_as_missing_NaN.csv",
-    "target": "Class",
+    "dataset": "Pima-Indians-Diabetes/data/raw/pima-indians-diabetes.csv",
+    "target": "Outcome",
     "random_state": 42,
     "test_size": 0.2,
     "cv": "StratifiedKFold",
@@ -13,26 +13,18 @@
         "f1",
         "roc_auc"
     ],
-    "refit_metric": "roc_auc",
-    "feature_scenario": "5_Bo_SkinThickness",
+    "refit_metric": "recall",
+    "feature_scenario": "2_Them_Ratio",
     "features": [
         "Pregnancies",
         "Glucose",
         "BloodPressure",
+        "SkinThickness",
         "Insulin",
         "BMI",
         "DiabetesPedigreeFunction",
         "Age",
-        "Glucose_BMI_Ratio",
-        "Glucose_Insulin_Ratio",
-        "Age_BMI_Ratio",
-        "BMI_Category_Underweight",
-        "BMI_Category_Normal",
-        "BMI_Category_Overweight",
-        "BMI_Category_Obese",
-        "Age_Category_Young",
-        "Age_Category_Middle",
-        "Age_Category_Older"
+        "Glucose_BMI_Ratio"
     ],
     "class_weight_comparison": [
         null,
@@ -40,5 +32,8 @@
     ],
     "smote_used": false,
     "pipeline_imputer": "median",
-    "output_directory": "C:\\HocMay\\Do_An_Hoc_May\\Model\\Viec14"
+    "output_directory": "Model/Viec14",
+    "du_lieu_chon_tham_so": "TRAIN only (5-Fold StratifiedKFold, refit='recall')",
+    "vai_tro_tap_test": "Khong danh gia tren Test trong Viec 14; de danh gia model cuoi cung o Viec 15.",
+    "xac_nhan_quyet_dinh_test": "TEST KHONG DUOC DUNG TRONG VIEC 14"
 }
