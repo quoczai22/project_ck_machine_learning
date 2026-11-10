@@ -25,6 +25,7 @@ from sklearn.model_selection import (
     train_test_split,
     StratifiedKFold,
     GridSearchCV,
+    cross_val_predict,
 )
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
@@ -55,13 +56,12 @@ N_SPLITS = 5
 N_JOBS = 1
 
 # ============================================================
-# QUYET DINH PROTOCOL XU LY TAP TEST TRONG VIEC 14:
-# Lua chon: GHI RO LA CHI DE THAM KHAO, KHONG DUNG DE CHON MODEL.
-# Toan bo qua trinh GridSearchCV va tim tham so toi uu duoc
-# thuc hien 100% tren tap TRAIN bang 5-Fold Stratified CV (refit='recall').
+# QUYET DINH PROTOCOL VIEC 14:
+# Toan bo qua trinh GridSearchCV, tim tham so toi uu va danh gia
+# classification report duoc thuc hien 100% tren tap TRAIN (5-Fold Stratified CV).
+# Tap TEST duoc cach ly tuyet doi (khong danh gia trong Viec 14) de tranh data leakage.
+# Danh gia tren Test set chi duoc thuc hien o Viec 15 cho model cuoi cung duoc chon.
 # ============================================================
-EVALUATE_TEST_FOR_REFERENCE = True
-TEST_ROLE_NOTE = "Chi tham khao nang luc tong quat hoa - Tuyet doi khong dung de chon model"
 
 try:
     CURRENT_DIR = Path(__file__).resolve().parent
@@ -678,7 +678,6 @@ search_results = []
 cv_results_all = []
 best_estimators = {}
 best_params_rows = []
-test_predictions = []
 
 for model_name, config in MODEL_CONFIGS.items():
 
@@ -718,25 +717,6 @@ for model_name, config in MODEL_CONFIGS.items():
     best_cv_f1 = cv_data["mean_test_f1"][best_idx]
     best_cv_auc = cv_data["mean_test_roc_auc"][best_idx]
 
-    y_pred = best_model.predict(X_test)
-
-    if hasattr(best_model, "predict_proba"):
-        y_score = best_model.predict_proba(X_test)[:, 1]
-    else:
-        y_score = best_model.decision_function(X_test)
-
-    test_accuracy = accuracy_score(y_test, y_pred)
-    test_precision = precision_score(
-        y_test, y_pred, zero_division=0
-    )
-    test_recall = recall_score(
-        y_test, y_pred, zero_division=0
-    )
-    test_f1 = f1_score(
-        y_test, y_pred, zero_division=0
-    )
-    test_auc = roc_auc_score(y_test, y_score)
-
     best_class_weight = search.best_params_.get(
         "model__class_weight",
         None,
@@ -757,12 +737,6 @@ for model_name, config in MODEL_CONFIGS.items():
         "Best_CV_Recall": best_cv_recall,
         "Best_CV_F1": best_cv_f1,
         "Best_CV_ROC_AUC": best_cv_auc,
-        "Test_Accuracy": test_accuracy,
-        "Test_Precision": test_precision,
-        "Test_Recall": test_recall,
-        "Test_F1": test_f1,
-        "Test_ROC_AUC": test_auc,
-        "Vai_Tro_Test": TEST_ROLE_NOTE,
         "Du_Lieu_Chon_Tham_So": "TRAIN 5-Fold CV (refit='recall')",
         "Best_Params": json.dumps(
             search.best_params_,
@@ -791,22 +765,12 @@ for model_name, config in MODEL_CONFIGS.items():
 
     cv_results_all.append(model_cv_df)
 
-    test_predictions.append({
-        "Mo_Hinh": model_name,
-        "y_true": np.asarray(y_test),
-        "y_pred": np.asarray(y_pred),
-        "y_score": np.asarray(y_score),
-    })
-
     print("\nTham so tot nhat (Chon tren TRAIN 5-Fold CV):")
     print(search.best_params_)
-    print(f"Best CV Recall:  {best_cv_recall:.4f}  <-- Metric quyet dinh")
-    print(f"Best CV F1:      {best_cv_f1:.4f}")
-    print(f"Best CV ROC-AUC: {best_cv_auc:.4f}")
-    print(f"[THAM KHAO - Khong dung chon model] Test Recall:   {test_recall:.4f}")
-    print(f"[THAM KHAO - Khong dung chon model] Test F1:       {test_f1:.4f}")
-    print(f"[THAM KHAO - Khong dung chon model] Test ROC-AUC:  {test_auc:.4f}")
-    print(f"[THAM KHAO - Khong dung chon model] Test Accuracy: {test_accuracy:.4f}")
+    print(f"Best CV Recall:   {best_cv_recall:.4f}  <-- Metric quyet dinh")
+    print(f"Best CV F1:       {best_cv_f1:.4f}")
+    print(f"Best CV ROC-AUC:  {best_cv_auc:.4f}")
+    print(f"Best CV Accuracy: {best_cv_accuracy:.4f}")
 
 
 # ============================================================
@@ -848,7 +812,7 @@ all_cv_df.to_csv(
     encoding="utf-8-sig",
 )
 
-print("\nBANG TONG HOP GRIDSEARCHCV (Chon tham so tren TRAIN 5-Fold CV; Test chi mang tinh tham khao)")
+print("\nBANG TONG HOP GRIDSEARCHCV (100% tren TRAIN 5-Fold Stratified CV)")
 display(
     results_df[
         [
@@ -858,11 +822,6 @@ display(
             "Best_CV_F1",
             "Best_CV_ROC_AUC",
             "Best_CV_Accuracy",
-            "Test_Recall",
-            "Test_F1",
-            "Test_ROC_AUC",
-            "Test_Accuracy",
-            "Vai_Tro_Test",
         ]
     ].round(4)
 )
@@ -1047,14 +1006,10 @@ save_table_png(
             "Best_CV_F1",
             "Best_CV_ROC_AUC",
             "Best_CV_Accuracy",
-            "Test_Recall",
-            "Test_F1",
-            "Test_ROC_AUC",
-            "Test_Accuracy",
         ]
     ],
     "Viec14_Bang_Tong_Hop_GridSearchCV.png",
-    "VIEC 14 - TONG HOP GRIDSEARCHCV (Test chi mang tinh tham khao)",
+    "VIEC 14 - TONG HOP GRIDSEARCHCV (TRAIN 5-FOLD CV)",
 )
 
 save_table_png(
@@ -1207,35 +1162,83 @@ for metric_col, metric_label, filename in [
 
 
 # ============================================================
-# 13. LUU CLASSIFICATION REPORT TREN TEST SET
+# 13. TAO VA LUU CLASSIFICATION REPORT TREN TAP TRAIN
+# (5-Fold Stratified CV Out-Of-Fold va Full Train Fit)
 # ============================================================
 
-test_report_rows = []
+train_report_rows = []
 
-for item in test_predictions:
-    report = classification_report(
-        item["y_true"],
-        item["y_pred"],
+for model_name, estimator in best_estimators.items():
+    # 1. Out-Of-Fold (OOF) cross-validation predictions tren tap Train
+    # Danh gia tren toan bo 614 mau tap Train bang 5-Fold Stratified CV
+    y_train_oof_pred = cross_val_predict(
+        estimator,
+        X_train,
+        y_train,
+        cv=cv,
+        n_jobs=N_JOBS,
+    )
+
+    report_oof = classification_report(
+        y_train,
+        y_train_oof_pred,
         output_dict=True,
         zero_division=0,
     )
 
-    for label, values in report.items():
+    for label, values in report_oof.items():
         if isinstance(values, dict):
-            test_report_rows.append({
-                "Mo_Hinh": item["Mo_Hinh"],
+            train_report_rows.append({
+                "Mo_Hinh": model_name,
+                "Du_Lieu": "TRAIN (5-Fold CV Out-of-Fold)",
                 "Class": label,
-                "Vai_Tro": "Chi tham khao doi chung - Khong dung chon model",
-                **values,
+                "precision": values["precision"],
+                "recall": values["recall"],
+                "f1-score": values["f1-score"],
+                "support": int(values["support"]),
             })
 
-test_report_df = pd.DataFrame(test_report_rows)
+    # 2. In-sample fit tren toan bo tap Train (sau khi refit)
+    # Cung cap doi chung giua ket qua fit va ket qua tong quat hoa CV
+    y_train_fit_pred = estimator.predict(X_train)
+    report_fit = classification_report(
+        y_train,
+        y_train_fit_pred,
+        output_dict=True,
+        zero_division=0,
+    )
 
-test_report_df.to_csv(
-    OUTPUT_DIR / "Viec14_Classification_Report_Test.csv",
+    for label, values in report_fit.items():
+        if isinstance(values, dict):
+            train_report_rows.append({
+                "Mo_Hinh": model_name,
+                "Du_Lieu": "TRAIN (Full Train Fit)",
+                "Class": label,
+                "precision": values["precision"],
+                "recall": values["recall"],
+                "f1-score": values["f1-score"],
+                "support": int(values["support"]),
+            })
+
+train_report_df = pd.DataFrame(train_report_rows)
+
+train_report_df.to_csv(
+    OUTPUT_DIR / "Viec14_Classification_Report_Train.csv",
     index=False,
     encoding="utf-8-sig",
 )
+
+# Luu them anh bang PNG cho Classification Report Train (5-Fold CV OOF)
+save_table_png(
+    train_report_df[train_report_df["Du_Lieu"] == "TRAIN (5-Fold CV Out-of-Fold)"][
+        ["Mo_Hinh", "Class", "precision", "recall", "f1-score", "support"]
+    ],
+    "Viec14_Bang_Classification_Report_Train.png",
+    "VIEC 14 - CLASSIFICATION REPORT TREN TRAIN (5-FOLD CV OOF)",
+)
+
+print("\nDA LUU FILE: Viec14_Classification_Report_Train.csv")
+display(train_report_df.round(4))
 
 
 # ============================================================
@@ -1265,8 +1268,8 @@ config_output = {
     "pipeline_imputer": "median",
     "output_directory": str(OUTPUT_DIR),
     "du_lieu_chon_tham_so": "TRAIN only (5-Fold StratifiedKFold, refit='recall')",
-    "vai_tro_tap_test": "Chi tham khao nang luc tong quat hoa sau khi GridSearchCV da tu dong refit tren Train. Tuyet doi khong dung Test de chon model.",
-    "xac_nhan_quyet_dinh_test": "GHI RO LA CHI DE THAM KHAO, KHONG DUNG DE CHON MODEL",
+    "vai_tro_tap_test": "Cach ly tuyet doi khoi Viec 14. Danh gia tren Test chi thuc hien o Viec 15 cho model cuoi cung da chot de tranh data leakage.",
+    "classification_report": "Thuc hien tren TRAIN bang 5-Fold CV Out-Of-Fold va Full Train Fit (Viec14_Classification_Report_Train.csv)",
 }
 
 with open(
@@ -1325,13 +1328,6 @@ print(f"Best CV Recall:   {best_result['Best_CV_Recall']:.4f}  <-- Metric quyet 
 print(f"Best CV F1:       {best_result['Best_CV_F1']:.4f}")
 print(f"Best CV ROC-AUC:  {best_result['Best_CV_ROC_AUC']:.4f}")
 print(f"Best CV Accuracy: {best_result['Best_CV_Accuracy']:.4f}")
-print("\n[CHU Y VE TAP TEST - CHI DUNG THAM KHAO]:")
-print("Cac chi so Test duoi day CHI MANG TINH CHAT THAM KHAO NANG LUC TONG QUAT HOA.")
-print("Tuyet doi khong su dung Test de chon model hay tinh chinh sieu tham so.")
-print(f"Test Recall (tham khao):   {best_result['Test_Recall']:.4f}")
-print(f"Test F1 (tham khao):       {best_result['Test_F1']:.4f}")
-print(f"Test ROC-AUC (tham khao):  {best_result['Test_ROC_AUC']:.4f}")
-print(f"Test Accuracy (tham khao): {best_result['Test_Accuracy']:.4f}")
 
 print("\nBang tong hop:")
 display(results_df.round(4))
