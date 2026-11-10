@@ -540,7 +540,7 @@ X = df[BASE_FEATURES].copy()
 y = df[TARGET_COL].copy()
 
 # Giu cung random_state va test_size nhu viec 13.
-X_train_raw, X_test_raw, y_train, y_test = train_test_split(
+X_train_raw, _, y_train, _ = train_test_split(
     X,
     y,
     test_size=TEST_SIZE,
@@ -549,20 +549,11 @@ X_train_raw, X_test_raw, y_train, y_test = train_test_split(
 )
 
 X_train = make_features(X_train_raw, SELECTED_SCENARIO)
-X_test = make_features(X_test_raw, SELECTED_SCENARIO)
-
-X_test = X_test.reindex(
-    columns=X_train.columns,
-    fill_value=0,
-)
-
 X_train = X_train.apply(pd.to_numeric, errors="coerce")
-X_test = X_test.apply(pd.to_numeric, errors="coerce")
 
 print("\nScenario su dung:", SELECTED_SCENARIO)
 print("So feature:", X_train.shape[1])
 print("So mau train:", len(X_train))
-print("So mau test:", len(X_test))
 
 
 # ============================================================
