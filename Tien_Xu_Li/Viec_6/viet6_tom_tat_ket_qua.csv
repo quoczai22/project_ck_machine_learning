@@ -1,0 +1,5 @@
+﻿Yêu cầu,Trạng thái,Chi tiết
+1. Lên luồng xử lý dữ liệu cho model,HOÀN THÀNH,"Pipeline 4 bước, nhận dữ liệu NaN từ Việc 5"
+2. Test: Không còn giá trị 0 bất thường sau transformer,PASS,"Số 0 còn lại = 0, Số NaN còn lại = 0"
+3. Test: Pipeline dự đoán được dữ liệu mới,PASS,Dự đoán OK cho cả 1 bệnh nhân và batch 4 bệnh nhân
+4. Vai trò Random Forest,GHI CHÚ,"Chỉ là mô hình demo pipeline, không phải model cuối; Việc 6 không đánh giá Test"

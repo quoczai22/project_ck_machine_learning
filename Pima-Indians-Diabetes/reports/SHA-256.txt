@@ -1,0 +1,7 @@
+   Ngày kiểm tra: 10/11/2026
+   URL: https://www.kaggle.com/datasets/kumargh/pimaindiansdiabetescsv
+   File Kaggle: pima-indians-diabetes.csv (tải ngày 10/11/2026, nguyên bản)
+   SHA-256 (Kaggle): c1e0f7d59d2e366cff1ab9fee1796e1e381ea5da64c6d96ef4baabf1eda5f238
+   File repo: Pima-Indians-Diabetes/data/raw/pima-indians-diabetes.csv
+   SHA-256 (repo): c1e0f7d59d2e366cff1ab9fee1796e1e381ea5da64c6d96ef4baabf1eda5f238
+   Ghi chú: nguồn thay thế (trang uciml không truy cập được) đã trao đổi với giảng viên.

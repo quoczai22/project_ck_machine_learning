@@ -1,0 +1,1171 @@
+
+# ==============================================================================
+# BÀI TẬP NHÓM - PIMA INDIANS DIABETES
+# GỘP VIỆC 6 + 7 + 8 (DÙNG FILE NaN TỪ VIỆC 5)
+# TARGET COLUMN: OUTCOME
+# ==============================================================================
+
+import pandas as pd
+import numpy as np
+import io
+import hashlib
+import time
+from datetime import datetime
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from google.colab import files
+
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_predict
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay
+)
+
+
+# ==============================================================================
+# PHẦN 1: ĐỌC DỮ LIỆU ĐÃ XỬ LÝ NaN (TỪ VIỆC 5)
+# ==============================================================================
+
+print("=" * 70)
+print("PHẦN 1: ĐỌC DỮ LIỆU ĐÃ XỬ LÝ NaN TỪ VIỆC 5")
+print("=" * 70)
+
+print("\n>>> Tải lên file pima_indians_zero_as_missing_NaN.csv")
+
+uploaded = files.upload()
+
+if not uploaded:
+    raise RuntimeError("Chưa chọn file CSV!")
+
+filename = next(iter(uploaded.keys()))
+
+run_started_at = datetime.now().astimezone().isoformat(timespec="seconds")
+start_time = time.perf_counter()
+input_file_bytes = uploaded[filename]
+dataset_sha256 = hashlib.sha256(input_file_bytes).hexdigest()
+df = pd.read_csv(io.BytesIO(input_file_bytes))
+
+print(f">>> Đã đọc: {df.shape[0]} dòng, {df.shape[1]} cột")
+
+
+# ==============================================================================
+# CHUẨN HÓA TÊN CỘT MỤC TIÊU THÀNH OUTCOME
+# ==============================================================================
+
+if "Class" in df.columns and "Outcome" not in df.columns:
+
+    df = df.rename(columns={"Class": "Outcome"})
+    print(">>> Đã đổi tên cột Class thành Outcome.")
+
+elif "Class" in df.columns and "Outcome" in df.columns:
+
+    raise ValueError(
+        "Dataset đang có cả Class và Outcome. "
+        "Vui lòng kiểm tra lại dữ liệu."
+    )
+
+elif "Outcome" not in df.columns:
+
+    raise ValueError(
+        "Không tìm thấy cột mục tiêu Class hoặc Outcome."
+    )
+
+print(">>> Target column sử dụng: Outcome")
+
+
+# ==============================================================================
+# KIỂM TRA DỮ LIỆU ĐÃ CÓ NaN CHƯA
+# ==============================================================================
+
+zero_cols_check = [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+]
+
+missing_columns = [
+    col for col in zero_cols_check
+    if col not in df.columns
+]
+
+if missing_columns:
+    raise ValueError(
+        f"Thiếu các cột sinh lý: {missing_columns}"
+    )
+
+nan_counts = df[zero_cols_check].isna().sum()
+
+print("\n[KIỂM TRA DỮ LIỆU ĐẦU VÀO]")
+print("-" * 50)
+
+print("Số lượng NaN ở 5 cột sinh lý:")
+print(nan_counts.to_string())
+
+print(f"Tổng số NaN: {nan_counts.sum()}")
+
+remaining_zeros = (df[zero_cols_check] == 0).sum().sum()
+
+print(f"Số lượng giá trị 0 còn lại: {remaining_zeros}")
+
+assert remaining_zeros == 0, (
+    "LỖI: File chưa được xử lý 0 -> NaN! "
+    "Vui lòng sử dụng file từ Việc 5."
+)
+
+print("File đầu vào đã được xử lý 0 -> NaN.")
+print()
+
+
+# ==============================================================================
+# PHẦN 2: TÁCH X - y VÀ CHIA TRAIN/TEST (VIỆC 7)
+# ==============================================================================
+
+print("=" * 70)
+print("PHẦN 2: CHIA TRAIN (80%) - TEST (20%) VỚI STRATIFY")
+print("=" * 70)
+
+X = df.drop(columns=["Outcome"])
+y = df["Outcome"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# ---- Bảng biên bản phân tầng ----
+
+summary_df = pd.DataFrame({
+    "Toàn bộ": y.value_counts().sort_index(),
+    "Train": y_train.value_counts().sort_index(),
+    "Test": y_test.value_counts().sort_index()
+})
+
+summary_df["Tỷ lệ Train (%)"] = (
+    summary_df["Train"] / len(y_train)
+) * 100
+
+summary_df["Tỷ lệ Test (%)"] = (
+    summary_df["Test"] / len(y_test)
+) * 100
+
+print("\n[BIÊN BẢN PHÂN TẦNG]")
+display(summary_df)
+
+print("\n[KIỂM ĐỊNH ĐỘC LẬP]")
+print(f" - Tổng số mẫu Train: {len(X_train)} mẫu (80%)")
+print(f" - Tổng số mẫu Test : {len(X_test)} mẫu (20%)")
+
+
+# ==============================================================================
+# BIỂU ĐỒ STRATIFY
+# ==============================================================================
+
+sns.set_theme(style="whitegrid")
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+x_labels = [
+    "Khỏe mạnh (0)",
+    "Bị tiểu đường (1)"
+]
+
+width = 0.35
+indices = np.arange(len(x_labels))
+
+train_counts = y_train.value_counts().sort_index()
+test_counts = y_test.value_counts().sort_index()
+
+axes[0].bar(
+    indices - width / 2,
+    train_counts,
+    width,
+    label=f"Train ({len(X_train)} mẫu)",
+    color="#3498db"
+)
+
+axes[0].bar(
+    indices + width / 2,
+    test_counts,
+    width,
+    label=f"Test ({len(X_test)} mẫu)",
+    color="#e74c3c"
+)
+
+axes[0].set_title(
+    "1. So sánh số lượng mẫu tuyệt đối",
+    fontsize=12,
+    fontweight="bold"
+)
+
+axes[0].set_xticks(indices)
+axes[0].set_xticklabels(x_labels)
+axes[0].set_ylabel("Số lượng mẫu")
+axes[0].legend()
+
+train_prop = y_train.value_counts(normalize=True).sort_index() * 100
+test_prop = y_test.value_counts(normalize=True).sort_index() * 100
+
+axes[1].bar(
+    indices - width / 2,
+    train_prop,
+    width,
+    label="Train Tỷ lệ (%)",
+    color="#2ecc71"
+)
+
+axes[1].bar(
+    indices + width / 2,
+    test_prop,
+    width,
+    label="Test Tỷ lệ (%)",
+    color="#f39c12"
+)
+
+axes[1].set_title(
+    "2. So sánh tỷ lệ % (Kiểm chứng Stratify)",
+    fontsize=12,
+    fontweight="bold"
+)
+
+axes[1].set_xticks(indices)
+axes[1].set_xticklabels(x_labels)
+axes[1].set_ylabel("Tỷ lệ phần trăm (%)")
+axes[1].set_ylim(0, 100)
+axes[1].legend()
+
+plt.tight_layout()
+plt.show()
+
+
+# ==============================================================================
+# PHẦN 3: XÂY DỰNG PIPELINE (VIỆC 6)
+# ==============================================================================
+
+print("=" * 70)
+print("PHẦN 3: XÂY DỰNG PIPELINE (VIỆC 6)")
+print("=" * 70)
+
+
+class ZeroToMissingTransformer(BaseEstimator, TransformerMixin):
+    """
+    Chuyển 0 -> NaN trên 5 cột sinh lý.
+    Giữ nguyên 0 ở Pregnancies.
+
+    Dữ liệu từ Việc 5 đã có NaN sẵn.
+    Transformer vẫn được giữ để xử lý dữ liệu mới.
+    """
+
+    def __init__(self, cols_to_convert):
+        self.cols_to_convert = cols_to_convert
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+
+        X_copy = X.copy()
+
+        for col in self.cols_to_convert:
+
+            if col in X_copy.columns:
+                X_copy[col] = X_copy[col].replace(0, np.nan)
+
+        return X_copy
+
+
+zero_cols = [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+]
+
+
+# Random Forest chỉ được sử dụng làm mô hình minh họa
+# trong quá trình kiểm tra Pipeline và Data Leakage.
+# Đây KHÔNG phải model cuối của dự án.
+
+preprocessing_pipeline = Pipeline(steps=[
+    (
+        "zero_to_missing",
+        ZeroToMissingTransformer(cols_to_convert=zero_cols)
+    ),
+    (
+        "imputer",
+        SimpleImputer(strategy="median")
+    ),
+    (
+        "scaler",
+        StandardScaler()
+    ),
+    (
+        "classifier",
+        RandomForestClassifier(random_state=42)
+    )
+])
+
+preprocessing_pipeline.fit(X_train, y_train)
+
+print(">>> Đã huấn luyện Pipeline thành công!")
+print(">>> Random Forest chỉ dùng để kiểm tra Pipeline, không phải model cuối.")
+
+
+# ==============================================================================
+# PHẦN 4: ĐÁNH GIÁ DEMO BẰNG CV TRÊN TRAIN (VIỆC 6)
+# ==============================================================================
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+y_pred_cv = cross_val_predict(preprocessing_pipeline, X_train, y_train, cv=cv)
+
+print("=" * 60)
+print("KẾT QUẢ 5-FOLD CV TRÊN TRAIN (OUT-OF-FOLD)")
+print("=" * 60)
+
+print(f"Độ chính xác: {accuracy_score(y_train, y_pred_cv):.4f}\n")
+
+print(classification_report(y_train, y_pred_cv))
+
+plt.figure(figsize=(6, 5))
+
+cm = confusion_matrix(y_train, y_pred_cv)
+
+disp = ConfusionMatrixDisplay(
+    confusion_matrix=cm,
+    display_labels=[
+        "Khỏe mạnh (0)",
+        "Tiểu đường (1)"
+    ]
+)
+
+disp.plot(cmap="Blues", ax=plt.gca())
+
+plt.title("Ma trận nhầm lẫn 5-fold CV trên Train")
+plt.grid(False)
+plt.show()
+
+
+# ==============================================================================
+# PHẦN 5: EDA (VIỆC 6)
+# ==============================================================================
+
+sns.set_theme(style="whitegrid")
+
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+
+# ---- Biểu đồ 1: Số lượng giá trị thiếu ----
+
+missing_counts = X[zero_cols].isna().sum()
+
+axes[0, 0].bar(
+    missing_counts.index,
+    missing_counts.values,
+    color="#e74c3c",
+    alpha=0.85
+)
+
+axes[0, 0].set_title(
+    "1. Số giá trị NaN ở 5 cột sinh lý",
+    fontsize=12,
+    fontweight="bold"
+)
+
+axes[0, 0].set_ylabel("Số mẫu bị khuyết")
+
+
+# ---- Biểu đồ 2: Phân phối Glucose theo Outcome ----
+
+sns.kdeplot(
+    data=df,
+    x="Glucose",
+    hue="Outcome",
+    fill=True,
+    common_norm=False,
+    palette={
+        0: "#2ecc71",
+        1: "#e74c3c"
+    },
+    ax=axes[0, 1]
+)
+
+axes[0, 1].set_title(
+    "2. Phân phối Glucose theo nhãn Outcome",
+    fontsize=12,
+    fontweight="bold"
+)
+
+
+# ---- Biểu đồ 3: Ma trận tương quan ----
+
+sns.heatmap(
+    df.corr(),
+    annot=True,
+    fmt=".2f",
+    cmap="Blues",
+    ax=axes[1, 0],
+    cbar=False
+)
+
+axes[1, 0].set_title(
+    "3. Ma trận tương quan",
+    fontsize=12,
+    fontweight="bold"
+)
+
+
+# ---- Biểu đồ 4: Feature Importance ----
+
+rf_model = preprocessing_pipeline.named_steps["classifier"]
+
+importances = pd.Series(
+    rf_model.feature_importances_,
+    index=X.columns
+).sort_values(ascending=True)
+
+importances.plot(
+    kind="barh",
+    color="#3498db",
+    ax=axes[1, 1]
+)
+
+axes[1, 1].set_title(
+    "4. Feature Importance",
+    fontsize=12,
+    fontweight="bold"
+)
+
+plt.tight_layout()
+plt.show()
+
+
+# ==============================================================================
+# PHẦN 6: DEMO BỆNH NHÂN MỚI (VIỆC 6)
+# ==============================================================================
+
+new_patient = pd.DataFrame([{
+    "Pregnancies": 2,
+    "Glucose": 140,
+    "BloodPressure": 70,
+    "SkinThickness": 0,
+    "Insulin": 0,
+    "BMI": 30.5,
+    "DiabetesPedigreeFunction": 0.5,
+    "Age": 45
+}])
+
+pred_class = preprocessing_pipeline.predict(new_patient)
+pred_prob = preprocessing_pipeline.predict_proba(new_patient)
+
+print("\n" + "=" * 60)
+print("DEMO BỆNH NHÂN MỚI")
+print("=" * 60)
+
+print(
+    f"Dự đoán: "
+    f"{'DƯƠNG TÍNH (1)' if pred_class[0] == 1 else 'ÂM TÍNH (0)'}"
+)
+
+print(
+    f"Xác suất tiểu đường: {pred_prob[0][1] * 100:.2f}%"
+)
+
+
+# ==============================================================================
+# PHẦN 7: VIỆC 8 - TEST LEAKAGE (6 BÀI TEST)
+# ==============================================================================
+
+print("\n\n" + "=" * 70)
+print("PHẦN 7: KIỂM TRA DATA LEAKAGE (6 BÀI TEST)")
+print("=" * 70)
+
+
+# ---- 7.1. Lấy tham số đã học từ Pipeline ----
+
+zero_transformer = preprocessing_pipeline.named_steps["zero_to_missing"]
+
+imputer_pipeline = preprocessing_pipeline.named_steps["imputer"]
+
+scaler_pipeline = preprocessing_pipeline.named_steps["scaler"]
+
+imputer_stats_learned = imputer_pipeline.statistics_
+
+scaler_mean_learned = scaler_pipeline.mean_
+
+
+# ---- 7.2. Tính toán độc lập CHỈ TRÊN TRAIN ----
+
+X_train_zeroed = zero_transformer.transform(X_train)
+
+manual_imputer = SimpleImputer(strategy="median")
+
+manual_imputer.fit(X_train_zeroed)
+
+manual_imputer_stats = manual_imputer.statistics_
+
+X_train_imputed = manual_imputer.transform(X_train_zeroed)
+
+manual_scaler = StandardScaler()
+
+manual_scaler.fit(X_train_imputed)
+
+manual_scaler_mean = manual_scaler.mean_
+
+
+# ---- 7.3. Transform Test và lưu tham số trước/sau ----
+
+stats_before = imputer_pipeline.statistics_.copy()
+
+mean_before = scaler_pipeline.mean_.copy()
+
+_ = preprocessing_pipeline[:-1].transform(X_test)
+
+stats_after = imputer_pipeline.statistics_.copy()
+
+mean_after = scaler_pipeline.mean_.copy()
+
+
+# ---- 7.4. Kiểm tra overlap ----
+# Dùng hash để xử lý ổn định các dòng có NaN.
+
+train_hashes = set(
+    pd.util.hash_pandas_object(
+        X_train,
+        index=False
+    ).values
+)
+
+test_hashes = set(
+    pd.util.hash_pandas_object(
+        X_test,
+        index=False
+    ).values
+)
+
+overlap = train_hashes.intersection(test_hashes)
+
+
+train_y_idx = set(y_train.index)
+
+test_y_idx = set(y_test.index)
+
+overlap_y = train_y_idx.intersection(test_y_idx)
+
+
+# ---- 7.5. Sáu bài test ----
+
+test1_pass = (
+    "Outcome" not in X_train.columns
+    and "Outcome" not in X_test.columns
+)
+
+test2_pass = (
+    np.allclose(
+        imputer_stats_learned,
+        manual_imputer_stats
+    )
+    and
+    np.allclose(
+        scaler_mean_learned,
+        manual_scaler_mean
+    )
+)
+
+test3_pass = (
+    np.array_equal(stats_before, stats_after)
+    and
+    np.array_equal(mean_before, mean_after)
+)
+
+test4_pass = len(overlap) == 0
+
+test5_pass = len(overlap_y) == 0
+
+test6_pass = (
+    X_train.shape[1] == X_test.shape[1]
+)
+
+
+test_results = [
+    test1_pass,
+    test2_pass,
+    test3_pass,
+    test4_pass,
+    test5_pass,
+    test6_pass
+]
+
+all_pass = all(test_results)
+
+
+# ==============================================================================
+# IN KẾT QUẢ 6 BÀI TEST
+# ==============================================================================
+
+print("\n[KẾT QUẢ 6 BÀI TEST LEAKAGE]")
+print("-" * 65)
+
+print(
+    f"T1. Nhãn 'Outcome' không lọt vào Features : "
+    f"{'PASS' if test1_pass else 'FAIL'}"
+)
+
+print(
+    f"T2. Imputer và Scaler chỉ fit trên Train  : "
+    f"{'PASS' if test2_pass else 'FAIL'}"
+)
+
+print(
+    f"T3. Tham số không đổi sau Transform Test  : "
+    f"{'PASS' if test3_pass else 'FAIL'}"
+)
+
+print(
+    f"T4. Không trùng X_train vs X_test         : "
+    f"{'PASS' if test4_pass else 'FAIL'}"
+)
+
+print(
+    f"T5. Không trùng index y_train vs y_test   : "
+    f"{'PASS' if test5_pass else 'FAIL'}"
+)
+
+print(
+    f"T6. Số cột Features khớp nhau             : "
+    f"{'PASS' if test6_pass else 'FAIL'}"
+)
+
+print("-" * 65)
+
+print(
+    f"TỔNG KẾT: {sum(test_results)}/6 PASS"
+)
+
+print("-" * 65)
+
+
+# ==============================================================================
+# DASHBOARD 6 BÀI TEST
+# ==============================================================================
+
+sns.set_theme(style="whitegrid")
+
+fig = plt.figure(figsize=(18, 12))
+
+gs = fig.add_gridspec(
+    3,
+    3,
+    hspace=0.55,
+    wspace=0.35
+)
+
+
+# ---- Ô 1: Thanh trạng thái 6 test ----
+
+ax1 = fig.add_subplot(gs[0, :])
+
+test_names_6 = [
+    'T1: Nhãn "Outcome" không lọt vào features',
+    "T2: Imputer và Scaler chỉ fit trên Train",
+    "T3: Tham số không đổi sau Transform Test",
+    "T4: Không trùng X_train vs X_test",
+    "T5: Không trùng y_train vs y_test",
+    "T6: Số cột features khớp nhau"
+]
+
+test_int = [
+    1 if result else 0
+    for result in test_results
+]
+
+colors_bar = [
+    "#2ecc71" if result else "#e74c3c"
+    for result in test_results
+]
+
+bars = ax1.barh(
+    test_names_6,
+    test_int,
+    color=colors_bar,
+    height=0.55,
+    edgecolor="black"
+)
+
+ax1.set_xlim(0, 1.4)
+
+ax1.set_xticks([0, 1])
+
+ax1.set_xticklabels(
+    ["FAIL", "PASS"],
+    fontsize=12,
+    fontweight="bold"
+)
+
+ax1.set_title(
+    "TỔNG QUAN 6 BÀI TEST LEAKAGE",
+    fontsize=14,
+    fontweight="bold",
+    pad=15
+)
+
+for bar, result in zip(bars, test_results):
+
+    label = "PASS" if result else "FAIL"
+
+    ax1.text(
+        bar.get_width() + 0.03,
+        bar.get_y() + bar.get_height() / 2,
+        label,
+        va="center",
+        fontsize=12,
+        fontweight="bold",
+        color="#27ae60" if result else "#c0392b"
+    )
+
+ax1.grid(axis="x", alpha=0.3)
+
+
+# ---- Ô 2: Median Imputer ----
+
+ax2 = fig.add_subplot(gs[1, 0])
+
+feature_names = X_train.columns.tolist()
+
+x_pos = np.arange(len(feature_names))
+
+width = 0.35
+
+ax2.bar(
+    x_pos - width / 2,
+    imputer_stats_learned,
+    width,
+    label="Pipeline (fit từ Train)",
+    color="#3498db",
+    edgecolor="black"
+)
+
+ax2.bar(
+    x_pos + width / 2,
+    manual_imputer_stats,
+    width,
+    label="Tính tay trên Train",
+    color="#e67e22",
+    edgecolor="black",
+    alpha=0.7
+)
+
+ax2.set_xticks(x_pos)
+
+ax2.set_xticklabels(
+    feature_names,
+    rotation=45,
+    ha="right",
+    fontsize=8
+)
+
+ax2.set_ylabel("Giá trị Median")
+
+ax2.set_title(
+    "T2: Median của Imputer",
+    fontsize=11,
+    fontweight="bold"
+)
+
+ax2.legend(fontsize=8)
+
+ax2.grid(axis="y", alpha=0.3)
+
+
+# ---- Ô 3: Mean Scaler ----
+
+ax3 = fig.add_subplot(gs[1, 1])
+
+ax3.bar(
+    x_pos - width / 2,
+    scaler_mean_learned,
+    width,
+    label="Pipeline (fit từ Train)",
+    color="#9b59b6",
+    edgecolor="black"
+)
+
+ax3.bar(
+    x_pos + width / 2,
+    manual_scaler_mean,
+    width,
+    label="Tính tay trên Train",
+    color="#f1c40f",
+    edgecolor="black",
+    alpha=0.7
+)
+
+ax3.set_xticks(x_pos)
+
+ax3.set_xticklabels(
+    feature_names,
+    rotation=45,
+    ha="right",
+    fontsize=8
+)
+
+ax3.set_ylabel("Giá trị Mean")
+
+ax3.set_title(
+    "T2: Mean của Scaler",
+    fontsize=11,
+    fontweight="bold"
+)
+
+ax3.legend(fontsize=8)
+
+ax3.grid(axis="y", alpha=0.3)
+
+ax3.axhline(
+    y=0,
+    color="red",
+    linestyle="--",
+    alpha=0.5
+)
+
+
+# ---- Ô 4: Độ lệch tham số ----
+
+ax4 = fig.add_subplot(gs[1, 2])
+
+imputer_diff = np.max(
+    np.abs(
+        np.array(stats_before) - np.array(stats_after)
+    )
+)
+
+scaler_diff = np.max(
+    np.abs(
+        np.array(mean_before) - np.array(mean_after)
+    )
+)
+
+diff_labels = [
+    "Imputer\n(statistics_)",
+    "Scaler\n(mean_)"
+]
+
+diff_values = [
+    imputer_diff,
+    scaler_diff
+]
+
+bars4 = ax4.bar(
+    diff_labels,
+    diff_values,
+    color=["#1abc9c", "#e74c3c"],
+    edgecolor="black",
+    width=0.5
+)
+
+ax4.set_ylabel("Độ lệch tuyệt đối tối đa")
+
+ax4.set_title(
+    "T3: Tham số thay đổi sau Test",
+    fontsize=11,
+    fontweight="bold"
+)
+
+ax4.set_ylim(
+    0,
+    max(diff_values + [1e-10]) * 3
+    if max(diff_values) > 0
+    else 1
+)
+
+for bar, val in zip(bars4, diff_values):
+
+    ax4.text(
+        bar.get_x() + bar.get_width() / 2,
+        bar.get_height() + 0.001,
+        f"{val:.2e}",
+        ha="center",
+        fontsize=10,
+        fontweight="bold"
+    )
+
+ax4.grid(axis="y", alpha=0.3)
+
+
+# ---- Ô 5: Features ----
+
+ax5 = fig.add_subplot(gs[2, 0])
+
+features_X = list(X_train.columns)
+
+has_outcome = "Outcome" in features_X
+
+colors_features = [
+    "#e74c3c" if feature == "Outcome" else "#3498db"
+    for feature in features_X
+]
+
+ax5.barh(
+    features_X,
+    [1] * len(features_X),
+    color=colors_features,
+    edgecolor="black"
+)
+
+ax5.set_xlim(0, 1.5)
+
+ax5.set_xticks([])
+
+ax5.set_title(
+    "T1: 'Outcome' không lọt vào Features",
+    fontsize=11,
+    fontweight="bold"
+)
+
+ax5.text(
+    0.75,
+    len(features_X) / 2 - 0.5,
+    "PASS" if not has_outcome else "FAIL",
+    ha="center",
+    fontsize=18,
+    fontweight="bold",
+    color="#27ae60" if not has_outcome else "#c0392b",
+    bbox=dict(
+        boxstyle="round,pad=0.5",
+        facecolor="lightgreen" if not has_outcome else "lightcoral",
+        alpha=0.5
+    )
+)
+
+
+# ---- Ô 6: Pie overlap ----
+
+ax6 = fig.add_subplot(gs[2, 1])
+
+n_train = len(X_train)
+
+n_test = len(X_test)
+
+n_overlap = len(overlap)
+
+sizes_overlap = [
+    n_train - n_overlap,
+    n_overlap,
+    n_test - n_overlap
+]
+
+labels_overlap = [
+    f"Train only\n{n_train - n_overlap}",
+    f"Overlap\n{n_overlap}",
+    f"Test only\n{n_test - n_overlap}"
+]
+
+colors_overlap = [
+    "#3498db",
+    "#e74c3c",
+    "#f39c12"
+]
+
+wedges, texts = ax6.pie(
+    sizes_overlap,
+    labels=labels_overlap,
+    colors=colors_overlap,
+    startangle=90,
+    textprops={
+        "fontsize": 9,
+        "fontweight": "bold"
+    }
+)
+
+ax6.set_title(
+    "T4: Kiểm tra trùng dữ liệu",
+    fontsize=11,
+    fontweight="bold"
+)
+
+
+# ---- Ô 7: Tổng kết ----
+
+ax7 = fig.add_subplot(gs[2, 2])
+
+n_pass = sum(test_results)
+
+n_fail = 6 - n_pass
+
+bars7 = ax7.bar(
+    ["PASS", "FAIL"],
+    [n_pass, n_fail],
+    color=["#2ecc71", "#e74c3c"],
+    edgecolor="black",
+    width=0.5
+)
+
+ax7.set_ylabel("Số lượng bài test")
+
+ax7.set_title(
+    "TỔNG KẾT",
+    fontsize=11,
+    fontweight="bold"
+)
+
+ax7.set_ylim(0, 7)
+
+for bar, val in zip(bars7, [n_pass, n_fail]):
+
+    ax7.text(
+        bar.get_x() + bar.get_width() / 2,
+        bar.get_height() + 0.1,
+        str(val),
+        ha="center",
+        fontsize=14,
+        fontweight="bold"
+    )
+
+ax7.text(
+    0.5,
+    0.85,
+    "ALL PASS" if all_pass else "CÓ FAIL",
+    transform=ax7.transAxes,
+    ha="center",
+    fontsize=14,
+    fontweight="bold",
+    color="#27ae60" if all_pass else "#c0392b",
+    bbox=dict(
+        boxstyle="round,pad=0.5",
+        facecolor="lightgreen" if all_pass else "lightcoral",
+        alpha=0.6
+    )
+)
+
+
+status_text = (
+    "TEST LEAKAGE PASS!"
+    if all_pass
+    else "TEST LEAKAGE FAIL!"
+)
+
+status_color = (
+    "#27ae60"
+    if all_pass
+    else "#c0392b"
+)
+
+fig.suptitle(
+    f"VIỆC 8: KIỂM TRA DATA LEAKAGE — {status_text}",
+    fontsize=16,
+    fontweight="bold",
+    color=status_color,
+    y=0.98
+)
+
+fig.subplots_adjust(
+    top=0.92,
+    bottom=0.06,
+    left=0.06,
+    right=0.97,
+    hspace=0.55,
+    wspace=0.35
+)
+
+fig.savefig(
+    "dashboard_viec8.png",
+    dpi=200,
+    bbox_inches="tight",
+    facecolor="white"
+)
+
+print("\n>>> Đã lưu: dashboard_viec8.png")
+
+plt.show()
+
+
+# ==============================================================================
+# PHẦN 8: BẢNG TÓM TẮT 6 BÀI TEST
+# ==============================================================================
+
+print("\n" + "=" * 70)
+print("BẢNG TÓM TẮT KẾT QUẢ TEST LEAKAGE")
+print("=" * 70)
+
+result_table = pd.DataFrame({
+
+    "Bài kiểm tra": [
+        "T1: Nhãn Outcome không lọt vào Features",
+        "T2: Imputer và Scaler chỉ fit trên Train",
+        "T3: Tham số không đổi sau transform Test",
+        "T4: Không trùng X_train vs X_test",
+        "T5: Không trùng index y_train vs y_test",
+        "T6: Số cột Features khớp nhau"
+    ],
+
+    "Trạng thái": [
+        "PASS" if test1_pass else "FAIL",
+        "PASS" if test2_pass else "FAIL",
+        "PASS" if test3_pass else "FAIL",
+        "PASS" if test4_pass else "FAIL",
+        "PASS" if test5_pass else "FAIL",
+        "PASS" if test6_pass else "FAIL"
+    ],
+
+    "Chi tiết": [
+        f"'Outcome' trong X_train: {'Outcome' in X_train.columns}",
+        (
+            "Imputer diff = "
+            f"{np.max(np.abs(imputer_stats_learned - manual_imputer_stats)):.2e}"
+        ),
+        (
+            "Tham số thay đổi tối đa = "
+            f"{max(imputer_diff, scaler_diff):.2e}"
+        ),
+        f"Số dòng trùng X = {len(overlap)}",
+        f"Số index trùng y = {len(overlap_y)}",
+        f"X_train={X_train.shape[1]}, X_test={X_test.shape[1]}"
+    ]
+})
+
+display(result_table)
+
+
+# ==============================================================================
+# PHẦN 9: XUẤT AUDIT LOG
+# ==============================================================================
+
+output_file = "viet8_leakage_audit_log.csv"
+
+run_finished_at = datetime.now().astimezone().isoformat(timespec="seconds")
+result_table["Target_Column"] = "Outcome"
+result_table["Input_File"] = filename
+result_table["Run_Started_At"] = run_started_at
+result_table["Run_Finished_At"] = run_finished_at
+result_table["Execution_Duration_Seconds"] = round(time.perf_counter() - start_time, 4)
+result_table["Dataset_SHA256"] = dataset_sha256
+
+result_table.to_csv(
+    output_file,
+    index=False,
+    encoding="utf-8-sig"
+)
+
+print(f"\nĐã xuất Audit Log: {output_file}")
+
+with open(output_file, "rb") as log_file:
+    audit_sha256 = hashlib.sha256(log_file.read()).hexdigest()
+with open(output_file + ".sha256", "w", encoding="utf-8") as checksum_file:
+    checksum_file.write(f"{audit_sha256}  {output_file}\n")
+print(f"Input: {filename} | SHA-256: {dataset_sha256}")
+print(f"Đã xuất: {output_file}.sha256")
+
+files.download(output_file)
+files.download(output_file + ".sha256")
