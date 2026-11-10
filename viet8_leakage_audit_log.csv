@@ -1,7 +1,7 @@
-﻿Bài kiểm tra,Trạng thái,Chi tiết
-T1: Nhãn Outcome không lọt vào Features,PASS,'Outcome' trong X_train: False
-T2: Imputer và Scaler chỉ fit trên Train,PASS,Imputer diff = 0.00e+00
-T3: Tham số không đổi sau transform Test,PASS,Tham số thay đổi tối đa = 0.00e+00
-T4: Không trùng X_train vs X_test,PASS,Số dòng trùng X = 0
-T5: Không trùng index y_train vs y_test,PASS,Số index trùng y = 0
-T6: Số cột Features khớp nhau,PASS,"X_train=8, X_test=8"
+﻿Bài kiểm tra,Trạng thái,Chi tiết,Target_Column,Input_File,Run_Started_At,Run_Finished_At,Execution_Duration_Seconds,Dataset_SHA256
+T1: Nhãn Outcome không lọt vào Features,PASS,'Outcome' trong X_train: False,Outcome,pima_indians_zero_as_missing_NaN.csv,2026-11-10T15:28:53+00:00,2026-11-10T15:28:59+00:00,5.7631,430c405b9efabe7ac075679e5944f3414e26e7a23d062ee773b06bcd2541b5a6
+T2: Imputer và Scaler chỉ fit trên Train,PASS,Imputer diff = 0.00e+00,Outcome,pima_indians_zero_as_missing_NaN.csv,2026-11-10T15:28:53+00:00,2026-11-10T15:28:59+00:00,5.7631,430c405b9efabe7ac075679e5944f3414e26e7a23d062ee773b06bcd2541b5a6
+T3: Tham số không đổi sau transform Test,PASS,Tham số thay đổi tối đa = 0.00e+00,Outcome,pima_indians_zero_as_missing_NaN.csv,2026-11-10T15:28:53+00:00,2026-11-10T15:28:59+00:00,5.7631,430c405b9efabe7ac075679e5944f3414e26e7a23d062ee773b06bcd2541b5a6
+T4: Không trùng X_train vs X_test,PASS,Số dòng trùng X = 0,Outcome,pima_indians_zero_as_missing_NaN.csv,2026-11-10T15:28:53+00:00,2026-11-10T15:28:59+00:00,5.7631,430c405b9efabe7ac075679e5944f3414e26e7a23d062ee773b06bcd2541b5a6
+T5: Không trùng index y_train vs y_test,PASS,Số index trùng y = 0,Outcome,pima_indians_zero_as_missing_NaN.csv,2026-11-10T15:28:53+00:00,2026-11-10T15:28:59+00:00,5.7631,430c405b9efabe7ac075679e5944f3414e26e7a23d062ee773b06bcd2541b5a6
+T6: Số cột Features khớp nhau,PASS,"X_train=8, X_test=8",Outcome,pima_indians_zero_as_missing_NaN.csv,2026-11-10T15:28:53+00:00,2026-11-10T15:28:59+00:00,5.7631,430c405b9efabe7ac075679e5944f3414e26e7a23d062ee773b06bcd2541b5a6
