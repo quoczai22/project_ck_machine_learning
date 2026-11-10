@@ -1,0 +1,13 @@
+﻿Mã test,Bài kiểm tra,Trạng thái,Chi tiết
+T1,Tổng Train + Test = Tổng dữ liệu gốc,PASS,614 + 154 = 768
+T2,y_train khớp X_train,PASS,"y_train = 614, X_train = 614"
+T3,y_test khớp X_test,PASS,"y_test = 154, X_test = 154"
+T4,Tỷ lệ Train xấp xỉ 80%,PASS,Train = 79.95%
+T5,Tỷ lệ Test xấp xỉ 20%,PASS,Test = 20.05%
+T6,Stratify giữ tỷ lệ lớp 0/1,PASS,"Gốc = 65.10%, Train = 65.15%, Test = 64.94%"
+T7,Số cột Features giống nhau,PASS,"Train = 8, Test = 8"
+T8,Tên cột Features giống nhau,PASS,Tên cột khớp
+T9,Index không trùng giữa Train và Test,PASS,Số index trùng = 0
+T10,Không có dòng Features trùng giữa Train và Test,PASS,Số dòng trùng = 0
+T11,Không có NaN trong nhãn,PASS,"NaN Train = 0, NaN Test = 0"
+T12,Nhãn chỉ chứa giá trị 0 và 1,PASS,"Train = [np.int64(0), np.int64(1)], Test = [np.int64(0), np.int64(1)]"

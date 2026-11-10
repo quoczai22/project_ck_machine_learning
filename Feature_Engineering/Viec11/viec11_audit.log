@@ -1,0 +1,43 @@
+2026-11-07 10:55:25,709 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP CHỌN LỌC ĐẶC TRƯNG
+2026-11-07 10:55:25,725 - Viec11_Selection - INFO - Đánh giá phương pháp: Không chọn (Giữ toàn bộ)
+2026-11-07 10:55:25,850 - Viec11_Selection - INFO - Đánh giá phương pháp: f_classif (Chọn top 8)
+2026-11-07 10:55:25,944 - Viec11_Selection - INFO - Đánh giá phương pháp: mutual_info (Chọn top 8)
+2026-11-07 10:55:26,194 - Viec11_Selection - INFO - Kết luận: Phương pháp tốt nhất là [Không chọn (Giữ toàn bộ)]
+2026-11-07 10:55:26,194 - Viec11_Selection - INFO - Đang đóng gói Pipeline thành đối tượng .pkl để bàn giao cho App/Model Lead...
+2026-11-07 10:55:26,209 - Viec11_Selection - INFO - Đã xuất file: feature_pipeline_for_app.pkl
+2026-11-07 10:55:26,209 - Viec11_Selection - INFO - HOÀN THÀNH CÔNG VIỆC 11.
+2026-11-09 18:05:08,566 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC
+2026-11-09 18:05:08,566 - Viec11_Selection - INFO - Đánh giá: Không chọn (Giữ toàn bộ)
+2026-11-09 18:05:08,738 - Viec11_Selection - INFO - Đánh giá: f_classif (Chọn top 8)
+2026-11-09 18:05:08,879 - Viec11_Selection - INFO - Đánh giá: mutual_info (Chọn top 8)
+2026-11-09 18:05:09,175 - Viec11_Selection - INFO - KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [Không chọn (Giữ toàn bộ)]
+2026-11-09 18:05:09,175 - Viec11_Selection - INFO - Đã xuất file pkl.
+2026-11-10 08:54:54,773 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC
+2026-11-10 08:54:54,776 - Viec11_Selection - INFO - Đánh giá: Không chọn (Giữ toàn bộ)
+2026-11-10 08:54:54,929 - Viec11_Selection - INFO - Đánh giá: f_classif (Chọn top 8)
+2026-11-10 08:54:55,053 - Viec11_Selection - INFO - Đánh giá: mutual_info (Chọn top 8)
+2026-11-10 08:54:55,352 - Viec11_Selection - INFO - KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [Không chọn (Giữ toàn bộ)]
+2026-11-10 08:54:55,356 - Viec11_Selection - INFO - Đã xuất file pkl.
+2026-11-10 09:00:22,917 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC
+2026-11-10 09:00:22,919 - Viec11_Selection - INFO - Đánh giá: Không chọn (Giữ toàn bộ)
+2026-11-10 09:00:23,079 - Viec11_Selection - INFO - Đánh giá: f_classif (Chọn top 8)
+2026-11-10 09:00:23,205 - Viec11_Selection - INFO - Đánh giá: mutual_info (Chọn top 8)
+2026-11-10 09:00:23,492 - Viec11_Selection - INFO - KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [Không chọn (Giữ toàn bộ)]
+2026-11-10 09:00:23,495 - Viec11_Selection - INFO - Đã xuất file pkl.
+2026-11-10 09:07:48,303 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC
+2026-11-10 09:07:48,306 - Viec11_Selection - INFO - Đánh giá: Không chọn (Giữ toàn bộ)
+2026-11-10 09:07:48,466 - Viec11_Selection - INFO - Đánh giá: f_classif (Chọn top 8)
+2026-11-10 09:07:48,591 - Viec11_Selection - INFO - Đánh giá: mutual_info (Chọn top 8)
+2026-11-10 09:07:48,905 - Viec11_Selection - INFO - KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [Không chọn (Giữ toàn bộ)]
+2026-11-10 20:26:14,439 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC, RECALL
+2026-11-10 20:26:14,441 - Viec11_Selection - INFO - Đánh giá: Không chọn (Giữ toàn bộ)
+2026-11-10 20:26:14,614 - Viec11_Selection - INFO - Đánh giá: f_classif (Chọn top 8)
+2026-11-10 20:26:14,751 - Viec11_Selection - INFO - Đánh giá: mutual_info (Chọn top 8)
+2026-11-10 20:26:15,060 - Viec11_Selection - INFO - KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [Không chọn (Giữ toàn bộ)]
+2026-11-10 20:26:15,063 - Viec11_Selection - INFO - Đã xuất file pkl.
+2026-11-10 21:20:20,787 - Viec11_Selection - INFO - BẮT ĐẦU CÔNG VIỆC 11: SO SÁNH PHƯƠNG PHÁP BẰNG F1, ROC-AUC, PR-AUC, RECALL
+2026-11-10 21:20:20,870 - Viec11_Selection - INFO - Đánh giá: Không chọn (Giữ toàn bộ)
+2026-11-10 21:20:21,043 - Viec11_Selection - INFO - Đánh giá: f_classif (Chọn top 8)
+2026-11-10 21:20:21,179 - Viec11_Selection - INFO - Đánh giá: mutual_info (Chọn top 8)
+2026-11-10 21:20:21,488 - Viec11_Selection - INFO - KẾT LUẬN: Phương pháp được chọn theo quy tắc Recall-first là [Không chọn (Giữ toàn bộ)]
+2026-11-10 21:20:21,491 - Viec11_Selection - INFO - Đã xuất file pkl.
