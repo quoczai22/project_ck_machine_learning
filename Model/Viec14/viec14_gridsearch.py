@@ -1238,12 +1238,9 @@ display(train_report_df.round(4))
 
 
 # ============================================================
-<<<<<<< HEAD
+
 # 13. LUU CAU HINH THUC NGHIEM
-=======
-# 14. LUU CAU HINH THUC NGHIEM
->>>>>>> d360520 (Update)
-# ============================================================
+
 
 config_output = {
     "dataset": DATA_PATH.relative_to(PROJECT_ROOT).as_posix(),
