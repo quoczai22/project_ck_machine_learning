@@ -63,9 +63,13 @@ def main():
         return {
             'Tên_Thử_Nghiệm': exp_name,
             'F1_Mean': round(cv_results['test_f1'].mean(), 4),
+            'F1_Std': round(cv_results['test_f1'].std(), 4),
             'ROC_AUC_Mean': round(cv_results['test_roc_auc'].mean(), 4),
+            'ROC_AUC_Std': round(cv_results['test_roc_auc'].std(), 4),
             'PR_AUC_Mean': round(cv_results['test_average_precision'].mean(), 4),
+            'PR_AUC_Std': round(cv_results['test_average_precision'].std(), 4),
             'Recall_Mean': round(cv_results['test_recall'].mean(), 4),
+            'Recall_Std': round(cv_results['test_recall'].std(), 4),
             'Feature_Bị_Loại': removed_cols
         }
 
