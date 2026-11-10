@@ -77,10 +77,11 @@ def main():
     logger.info(f"KẾT LUẬN: Phương pháp vô địch dựa trên F1-Score là [{best_method}]")
     
     df_results.drop(columns=['Pipeline']).to_csv('ket_luan_feature_selection.csv', index=False, encoding='utf-8-sig')
+    
     feature_only_steps = best_pipeline.steps[:-1] 
     feature_only_pipeline = Pipeline(feature_only_steps)
+    
     joblib.dump(feature_only_pipeline, 'data_preprocessing_pipeline_only.pkl')
-    logger.info("Đã xuất file pkl.")
 
 if __name__ == "__main__":
     main()
