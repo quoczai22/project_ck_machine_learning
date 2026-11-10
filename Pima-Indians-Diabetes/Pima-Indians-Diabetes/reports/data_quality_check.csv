@@ -1,0 +1,9 @@
+﻿Nội dung kiểm tra,Kết quả,Đánh giá
+Kích thước dataset,768 dòng × 9 cột,Đạt
+Kiểu dữ liệu,Tất cả đều là dữ liệu số,Đạt
+Missing Value - NaN,0,Đạt
+Dòng trùng lặp,0,Đạt
+Nhãn Outcome,Chỉ gồm 0 và 1,Đạt
+Số mẫu lớp 0,500,Đạt
+Số mẫu lớp 1,268,Đạt
+Giá trị 0 bất hợp lý,"Có ở Glucose, BloodPressure, SkinThickness, Insulin, BMI",Cần xử lý ở bước Preprocessing

@@ -1,0 +1,10 @@
+﻿Column,Role,Description
+Pregnancies,Feature,Số lần mang thai
+Glucose,Feature,Nồng độ glucose huyết tương
+BloodPressure,Feature,Huyết áp tâm trương
+SkinThickness,Feature,Độ dày nếp gấp da
+Insulin,Feature,Nồng độ insulin
+BMI,Feature,Chỉ số khối cơ thể
+DiabetesPedigreeFunction,Feature,Chỉ số liên quan tiền sử gia đình
+Age,Feature,Tuổi
+Outcome,Target,"Nhãn 0/1: 0 = không mắc tiểu đường, 1 = mắc tiểu đường"
