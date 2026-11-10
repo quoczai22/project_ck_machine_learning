@@ -6,4 +6,4 @@ Dòng trùng lặp,0,Đạt
 Nhãn Outcome,Chỉ gồm 0 và 1,Đạt
 Số mẫu lớp 0,500,Đạt
 Số mẫu lớp 1,268,Đạt
-Giá trị 0 bất hợp lý,"Có ở Glucose, BloodPressure, SkinThickness, Insulin, BMI",Cần xử lý ở bước Preprocessing
+Giá trị 0 bất hợp lý,"Glucose: 5, BloodPressure: 35, SkinThickness: 227, Insulin: 374, BMI: 11",Cần xử lý ở bước Preprocessing

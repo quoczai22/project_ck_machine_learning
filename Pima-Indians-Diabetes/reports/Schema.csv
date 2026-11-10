@@ -7,4 +7,4 @@ Insulin,Feature,Nồng độ insulin
 BMI,Feature,Chỉ số khối cơ thể
 DiabetesPedigreeFunction,Feature,Chỉ số liên quan tiền sử gia đình
 Age,Feature,Tuổi
-Outcome,Target,"Nhãn 0/1: 0 = không mắc tiểu đường, 1 = mắc tiểu đường"
+Outcome,Target,"Nhãn dữ liệu: 0 = không được ghi nhận mắc tiểu đường, 1 = được ghi nhận mắc tiểu đường"
