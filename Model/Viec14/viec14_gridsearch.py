@@ -54,6 +54,15 @@ TEST_SIZE = 0.20
 N_SPLITS = 5
 N_JOBS = 1
 
+# ============================================================
+# QUYET DINH PROTOCOL XU LY TAP TEST TRONG VIEC 14:
+# Lua chon: GHI RO LA CHI DE THAM KHAO, KHONG DUNG DE CHON MODEL.
+# Toan bo qua trinh GridSearchCV va tim tham so toi uu duoc
+# thuc hien 100% tren tap TRAIN bang 5-Fold Stratified CV (refit='recall').
+# ============================================================
+EVALUATE_TEST_FOR_REFERENCE = True
+TEST_ROLE_NOTE = "Chi tham khao nang luc tong quat hoa - Tuyet doi khong dung de chon model"
+
 try:
     CURRENT_DIR = Path(__file__).resolve().parent
 except NameError:
@@ -753,6 +762,8 @@ for model_name, config in MODEL_CONFIGS.items():
         "Test_Recall": test_recall,
         "Test_F1": test_f1,
         "Test_ROC_AUC": test_auc,
+        "Vai_Tro_Test": TEST_ROLE_NOTE,
+        "Du_Lieu_Chon_Tham_So": "TRAIN 5-Fold CV (refit='recall')",
         "Best_Params": json.dumps(
             search.best_params_,
             ensure_ascii=False,
@@ -764,6 +775,8 @@ for model_name, config in MODEL_CONFIGS.items():
     best_params_rows.append({
         "Mo_Hinh": model_name,
         "Best_Class_Weight": best_class_weight_label,
+        "Best_CV_Recall": best_cv_recall,
+        "Best_CV_F1": best_cv_f1,
         "Best_CV_ROC_AUC": best_cv_auc,
         "Best_Params": json.dumps(
             search.best_params_,
@@ -785,11 +798,15 @@ for model_name, config in MODEL_CONFIGS.items():
         "y_score": np.asarray(y_score),
     })
 
-    print("\nTham so tot nhat:")
+    print("\nTham so tot nhat (Chon tren TRAIN 5-Fold CV):")
     print(search.best_params_)
+    print(f"Best CV Recall:  {best_cv_recall:.4f}  <-- Metric quyet dinh")
+    print(f"Best CV F1:      {best_cv_f1:.4f}")
     print(f"Best CV ROC-AUC: {best_cv_auc:.4f}")
-    print(f"Test ROC-AUC: {test_auc:.4f}")
-    print(f"Test Accuracy: {test_accuracy:.4f}")
+    print(f"[THAM KHAO - Khong dung chon model] Test Recall:   {test_recall:.4f}")
+    print(f"[THAM KHAO - Khong dung chon model] Test F1:       {test_f1:.4f}")
+    print(f"[THAM KHAO - Khong dung chon model] Test ROC-AUC:  {test_auc:.4f}")
+    print(f"[THAM KHAO - Khong dung chon model] Test Accuracy: {test_accuracy:.4f}")
 
 
 # ============================================================
@@ -831,20 +848,21 @@ all_cv_df.to_csv(
     encoding="utf-8-sig",
 )
 
-print("\nBANG TONG HOP GRIDSEARCHCV")
+print("\nBANG TONG HOP GRIDSEARCHCV (Chon tham so tren TRAIN 5-Fold CV; Test chi mang tinh tham khao)")
 display(
     results_df[
         [
             "Mo_Hinh",
             "Best_Class_Weight",
-            "Best_CV_Accuracy",
             "Best_CV_Recall",
             "Best_CV_F1",
             "Best_CV_ROC_AUC",
-            "Test_Accuracy",
+            "Best_CV_Accuracy",
             "Test_Recall",
             "Test_F1",
             "Test_ROC_AUC",
+            "Test_Accuracy",
+            "Vai_Tro_Test",
         ]
     ].round(4)
 )
@@ -1025,18 +1043,18 @@ save_table_png(
         [
             "Mo_Hinh",
             "Best_Class_Weight",
-            "Best_CV_Accuracy",
             "Best_CV_Recall",
             "Best_CV_F1",
             "Best_CV_ROC_AUC",
-            "Test_Accuracy",
+            "Best_CV_Accuracy",
             "Test_Recall",
             "Test_F1",
             "Test_ROC_AUC",
+            "Test_Accuracy",
         ]
     ],
     "Viec14_Bang_Tong_Hop_GridSearchCV.png",
-    "VIEC 14 - TONG HOP GRIDSEARCHCV",
+    "VIEC 14 - TONG HOP GRIDSEARCHCV (Test chi mang tinh tham khao)",
 )
 
 save_table_png(
@@ -1207,6 +1225,7 @@ for item in test_predictions:
             test_report_rows.append({
                 "Mo_Hinh": item["Mo_Hinh"],
                 "Class": label,
+                "Vai_Tro": "Chi tham khao doi chung - Khong dung chon model",
                 **values,
             })
 
@@ -1245,6 +1264,9 @@ config_output = {
     "smote_used": False,
     "pipeline_imputer": "median",
     "output_directory": str(OUTPUT_DIR),
+    "du_lieu_chon_tham_so": "TRAIN only (5-Fold StratifiedKFold, refit='recall')",
+    "vai_tro_tap_test": "Chi tham khao nang luc tong quat hoa sau khi GridSearchCV da tu dong refit tren Train. Tuyet doi khong dung Test de chon model.",
+    "xac_nhan_quyet_dinh_test": "GHI RO LA CHI DE THAM KHAO, KHONG DUNG DE CHON MODEL",
 }
 
 with open(
@@ -1293,19 +1315,23 @@ for model_name, estimator in best_estimators.items():
 best_result = results_df.iloc[0]
 
 print("\n" + "=" * 75)
-print("KET QUA TOT NHAT THEO BEST CV RECALL (refit='recall')")
+print("KET QUA TOT NHAT THEO BEST CV RECALL (refit='recall' tren TRAIN)")
 print("=" * 75)
 
-print("Model:", best_result["Mo_Hinh"])
+print("Model duoc chon:", best_result["Mo_Hinh"])
 print("Feature scenario:", best_result["Scenario"])
 print("Class weight:", best_result["Best_Class_Weight"])
-print(f"Best CV Recall:  {best_result['Best_CV_Recall']:.4f}")
-print(f"Best CV F1:      {best_result['Best_CV_F1']:.4f}")
-print(f"Best CV ROC-AUC: {best_result['Best_CV_ROC_AUC']:.4f}")
-print(f"Test Recall:     {best_result['Test_Recall']:.4f}")
-print(f"Test F1:         {best_result['Test_F1']:.4f}")
-print(f"Test ROC-AUC:    {best_result['Test_ROC_AUC']:.4f}")
-print(f"Test Accuracy:   {best_result['Test_Accuracy']:.4f}")
+print(f"Best CV Recall:   {best_result['Best_CV_Recall']:.4f}  <-- Metric quyet dinh chon model")
+print(f"Best CV F1:       {best_result['Best_CV_F1']:.4f}")
+print(f"Best CV ROC-AUC:  {best_result['Best_CV_ROC_AUC']:.4f}")
+print(f"Best CV Accuracy: {best_result['Best_CV_Accuracy']:.4f}")
+print("\n[CHU Y VE TAP TEST - CHI DUNG THAM KHAO]:")
+print("Cac chi so Test duoi day CHI MANG TINH CHAT THAM KHAO NANG LUC TONG QUAT HOA.")
+print("Tuyet doi khong su dung Test de chon model hay tinh chinh sieu tham so.")
+print(f"Test Recall (tham khao):   {best_result['Test_Recall']:.4f}")
+print(f"Test F1 (tham khao):       {best_result['Test_F1']:.4f}")
+print(f"Test ROC-AUC (tham khao):  {best_result['Test_ROC_AUC']:.4f}")
+print(f"Test Accuracy (tham khao): {best_result['Test_Accuracy']:.4f}")
 
 print("\nBang tong hop:")
 display(results_df.round(4))
