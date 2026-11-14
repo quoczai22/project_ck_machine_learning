@@ -1,0 +1,7 @@
+2026-11-14 16:41:56,592 - Viec11_LDA - INFO - BẮT ĐẦU THỬ NGHIỆM LDA (CHỈ TRAIN, 5-FOLD CV)
+2026-11-14 16:41:56,631 - Viec11_LDA - INFO - Đánh giá: SVM đã chốt, không giảm chiều (9 feature)
+2026-11-14 16:41:58,859 - Viec11_LDA - INFO - Đánh giá: LDA 1 thành phần + SVM
+2026-11-14 16:42:01,038 - Viec11_LDA - INFO - Đánh giá: LDA phân lớp trực tiếp (priors mặc định)
+2026-11-14 16:42:01,843 - Viec11_LDA - INFO - Đánh giá: LDA phân lớp trực tiếp (priors cân bằng 0,5/0,5)
+2026-11-14 16:42:02,613 - Viec11_LDA - INFO - Phương án được chọn theo quy tắc Recall-first: SVM đã chốt, không giảm chiều (9 feature)
+2026-11-14 16:42:02,614 - Viec11_LDA - INFO - HOÀN THÀNH THỬ NGHIỆM LDA.

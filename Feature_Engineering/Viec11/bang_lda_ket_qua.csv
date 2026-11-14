@@ -1,0 +1,5 @@
+﻿Phương_Án,Recall_Mean,Recall_Std,F1_Mean,F1_Std,ROC_AUC_Mean,ROC_AUC_Std,PR_AUC_Mean,PR_AUC_Std,Đạt_Ràng_Buộc_0_03,Được_Chọn
+"SVM đã chốt, không giảm chiều (9 feature)",0.7947,0.0607,0.6699,0.0181,0.8298,0.0107,0.7285,0.0335,True,True
+LDA 1 thành phần + SVM,0.715,0.045,0.6722,0.0145,0.8235,0.0248,0.6865,0.0654,True,False
+LDA phân lớp trực tiếp (priors mặc định),0.5841,0.0184,0.6617,0.0242,0.8432,0.0205,0.7443,0.0613,True,False
+"LDA phân lớp trực tiếp (priors cân bằng 0,5/0,5)",0.6869,0.0233,0.6714,0.0091,0.8432,0.0205,0.7443,0.0613,True,False
