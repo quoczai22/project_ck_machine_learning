@@ -1,10 +1,33 @@
-AUTOMATED TEST RESULT
-====================
-Command: python -m pytest -q
-Result: 6 passed
+AUTOMATED TEST RESULT (cap nhat 14/11/2026)
+==========================================
+Nguoi chay: nhom truong (Trinh Huu Kien Quoc), khong phai Pham Tung.
+Pham vi: chay test tu dong va kiem thu app bang bo test cua Streamlit. CHUA chay tren trinh duyet that.
 
-Environment note:
-The current build container has scikit-learn 1.8.0, while the supplied joblib artifact was serialized with scikit-learn 1.9.0. Tests completed, but scikit-learn emitted InconsistentVersionWarning. For the actual demo environment, install requirements.txt (which pins scikit-learn==1.9.0) before loading the artifact.
+Moi truong
+- Python 3.14.x (Windows)
+- scikit-learn 1.9.0 (dung phien ban artifact duoc luu)
+- Streamlit 1.64.0, numpy 2.5.2, pandas 2.3.3
 
-Streamlit browser/UI test:
-Not executed in this build container because Streamlit is not installed here. Run `pip install -r requirements.txt`, then `streamlit run app.py` and complete docs/TEST_CHECKLIST.md on the presentation computer.
+1) Test tu dong
+Lenh: python -m pytest -p no:cacheprovider -q -W error::sklearn.exceptions.InconsistentVersionWarning
+Ket qua: 6 passed (khong co InconsistentVersionWarning; cac canh bao con lai chi la DeprecationWarning cua joblib/NumPy).
+
+2) Kiem thu app bang streamlit.testing (AppTest), chay app.py nguyen ban
+Tat ca khong co exception:
+- Gia tri mac dinh: Outcome = 0, xac suat 11.2%
+- Glucose = 0: co thong bao gia tri thieu duoc impute, Outcome = 0, 9.6%
+- BMI = 0: co thong bao gia tri thieu, khong chia cho 0, Outcome = 0, 13.7%
+- 5 cot lam sang = 0: co thong bao, Outcome = 0, 17.0%
+- Pregnancies = 0: chap nhan, khong bi coi la thieu, Outcome = 0, 11.1%
+- Bien tren cua tat ca cac o: Outcome = 1, 50.0%
+- Bien duoi cua tat ca cac o: co thong bao, Outcome = 0, 8.0%
+- Thieu artifact (tien trinh moi): hien thong bao "Khong the tai model artifact", khong crash.
+
+3) Doi chieu voi pipeline cua nhom (models/diabetes_pipeline.joblib)
+Tren 768 dong du lieu goc (chi so sanh hai model voi nhau, khong tinh metric theo nhan):
+- Nhan du doan trung nhau 768/768.
+- Chenh lech xac suat trung binh 0.0012, lon nhat 0.10 (mot dong).
+
+Chua xac nhan
+- Checklist trinh duyet that (docs/TEST_CHECKLIST.md, UI-01 den UI-10): can nguoi phu trach chay bang `streamlit run app.py` tren may demo, chup anh va ghi nhan.
+- Artifact duoc luu bang scikit-learn 1.9.0; khong nap bang phien ban khac.
