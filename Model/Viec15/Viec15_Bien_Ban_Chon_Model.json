@@ -1,7 +1,7 @@
 {
     "Tieu_de": "BIEN BAN CHON CANDIDATE MODEL - VIEC 15",
     "Dataset": "C:\\HocMay\\Do_An_Hoc_May\\Tien_Xu_Li\\Viec_5\\pima_indians_zero_as_missing_NaN.csv",
-    "Target": "Class",
+    "Target": "Outcome",
     "Phuong_phap": "StratifiedKFold + GridSearchCV",
     "So_Fold": 5,
     "Du_Lieu_Chon_Model": "TRAIN only",

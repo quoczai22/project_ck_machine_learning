@@ -251,10 +251,12 @@ for column in df.columns:
         rename_map[column] = aliases[key]
 
 df = df.rename(columns=rename_map)
+if "Class" in df.columns and "Outcome" not in df.columns:
+    df = df.rename(columns={"Class": "Outcome"})
 
 TARGET_CANDIDATES = [
-    "Class",
     "Outcome",
+    "Class",
     "Diabetes",
     "Target",
 ]
