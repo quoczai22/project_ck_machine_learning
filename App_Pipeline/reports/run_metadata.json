@@ -1,0 +1,71 @@
+{
+  "final_model": "SVM",
+  "final_params": {
+    "classifier__C": 0.1,
+    "classifier__class_weight": "balanced",
+    "classifier__gamma": "scale"
+  },
+  "feature_order": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age",
+    "Glucose_BMI_Ratio"
+  ],
+  "selected_cv_index": 31,
+  "selected_cv_metrics": {
+    "mean_cv_recall": 0.7946843853820599,
+    "std_cv_recall": 0.0606583018792144,
+    "mean_cv_f1": 0.6698847160529009,
+    "std_cv_f1": 0.01810051274840975,
+    "mean_cv_roc_auc": 0.8298006644518271,
+    "std_cv_roc_auc": 0.010710151408176131
+  },
+  "metric_protocol": {
+    "positive_class": 1,
+    "primary": "recall",
+    "supporting": [
+      "precision",
+      "f1",
+      "roc_auc",
+      "pr_auc",
+      "accuracy"
+    ]
+  },
+  "selection_rule": "Train-CV F1 and ROC-AUC within 0.03 of respective candidate maxima; maximize Recall, ties F1 then ROC-AUC.",
+  "selection_tolerance": 0.03,
+  "selection_metrics_source": "5-fold stratified cross-validation within training split only",
+  "test_metrics_used_for_selection": false,
+  "test_fraction": 0.2,
+  "test_size": 154,
+  "train_size": 614,
+  "random_state": 42,
+  "cv_folds": 5,
+  "positive_class": 1,
+  "test_previously_observed": true,
+  "threshold_policy": "Class labels from estimator.predict() (for SVC: decision_function > 0, not predict_proba >= 0.5); not tuned on Test",
+  "test_predict_vs_proba_0_5_disagreements": 25,
+  "dataset": {
+    "file": "data/raw/diabetes.csv",
+    "rows": 768,
+    "columns": 9,
+    "sha256": "6bfe5d0f379d17a0e0819b996407e3c09bf80febd4287f2ed212190dfff154af",
+    "source_url": "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv",
+    "download_date": null
+  },
+  "zero_as_missing": [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+  ],
+  "runtime": {
+    "python": "3.14.6",
+    "scikit_learn": "1.9.0"
+  }
+}
