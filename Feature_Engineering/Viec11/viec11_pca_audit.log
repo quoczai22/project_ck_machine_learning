@@ -1,0 +1,15 @@
+2026-11-14 16:38:51,133 - Viec11_PCA - INFO - BẮT ĐẦU THỬ NGHIỆM PCA (CHỈ TRAIN, 5-FOLD CV)
+2026-11-14 16:38:51,170 - Viec11_PCA - INFO - Train: 614 mẫu, 8 feature gốc; lớp dương 214
+2026-11-14 16:38:51,171 - Viec11_PCA - INFO - Đánh giá: Không PCA (9 feature)
+2026-11-14 16:38:52,895 - Viec11_PCA - INFO - Đánh giá: PCA 2 thành phần
+2026-11-14 16:38:53,413 - Viec11_PCA - INFO - Đánh giá: PCA 3 thành phần
+2026-11-14 16:38:53,990 - Viec11_PCA - INFO - Đánh giá: PCA 4 thành phần
+2026-11-14 16:38:54,599 - Viec11_PCA - INFO - Đánh giá: PCA 5 thành phần
+2026-11-14 16:38:55,179 - Viec11_PCA - INFO - Đánh giá: PCA 6 thành phần
+2026-11-14 16:38:55,806 - Viec11_PCA - INFO - Đánh giá: PCA 7 thành phần
+2026-11-14 16:38:56,398 - Viec11_PCA - INFO - Đánh giá: PCA 8 thành phần
+2026-11-14 16:38:57,041 - Viec11_PCA - INFO - Đánh giá: PCA 9 thành phần
+2026-11-14 16:38:57,719 - Viec11_PCA - INFO - Đánh giá: PCA giữ 90% phương sai
+2026-11-14 16:38:58,366 - Viec11_PCA - INFO - Đánh giá: PCA giữ 95% phương sai
+2026-11-14 16:38:59,154 - Viec11_PCA - INFO - Phương án được chọn theo quy tắc Recall-first: PCA 3 thành phần
+2026-11-14 16:38:59,184 - Viec11_PCA - INFO - HOÀN THÀNH THỬ NGHIỆM PCA.

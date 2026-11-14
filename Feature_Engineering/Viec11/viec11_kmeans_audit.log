@@ -1,0 +1,3 @@
+2026-11-14 16:42:19,757 - Viec11_KMeans - INFO - BẮT ĐẦU KHÁM PHÁ KMEANS (CHỈ TRAIN, KHÔNG DÙNG NHÃN KHI PHÂN CỤM)
+2026-11-14 16:42:29,983 - Viec11_KMeans - INFO - k có Silhouette cao nhất: 2
+2026-11-14 16:42:29,984 - Viec11_KMeans - INFO - HOÀN THÀNH KHÁM PHÁ KMEANS.
