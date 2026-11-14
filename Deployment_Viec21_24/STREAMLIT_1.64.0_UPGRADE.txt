@@ -1,0 +1,27 @@
+NANG CAP STREAMLIT 1.64.0
+==========================
+
+requirements.txt da duoc cap nhat: streamlit==1.64.0.
+Ma app.py duoc giu nguyen vi cac API dang su dung van phu hop.
+
+Cach chay tren may Windows:
+1. Mo CMD/PowerShell va cd vao thu muc Deployment_Viec21_24.
+2. Tao moi truong ao:
+   py -3.11 -m venv .venv
+3. Kich hoat:
+   .venv\Scripts\activate
+4. Cai dependencies:
+   python -m pip install --upgrade pip
+   python -m pip install -r requirements.txt
+5. Kiem tra phien ban:
+   python -m streamlit --version
+   Ket qua mong doi: Streamlit, version 1.64.0
+6. Chay ung dung:
+   streamlit run app.py
+7. Mo http://localhost:8501
+
+QUAN TRONG:
+- requirements.txt giu scikit-learn==1.9.0 de phu hop artifact pipeline.joblib.
+- Khong tu y doi scikit-learn xuong 1.8.0 hoac phien ban khac khi demo.
+- Moi truong tao file khong co ket noi PyPI, nen chua the cai va chay UI 1.64.0 tai day.
+- Can internet khi cai dependencies lan dau.

@@ -25,6 +25,8 @@ Lưu ý: biên bản review nhóm cho biết Test đã được xem nhiều lầ
 
 ## 2. Cài đặt và chạy
 
+Phiên bản giao diện được ghim là **Streamlit 1.64.0** trong `requirements.txt`. Streamlit 1.64.0 yêu cầu Python >=3.10. Để tránh xung đột với các thư viện của mô hình, nên cài toàn bộ dependencies trong môi trường ảo mới.
+
 Khuyến nghị Python 3.11 hoặc phiên bản tương thích với các wheel của scikit-learn 1.9.0.
 
 ```bash
@@ -35,7 +37,8 @@ python -m venv .venv
 # macOS/Linux:
 # source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python -m streamlit --version
 streamlit run app.py
 ```
 
@@ -72,3 +75,10 @@ Deployment_Viec21_24/
 Artifact gốc được lưu bằng scikit-learn 1.9.0. Không nên nạp bằng phiên bản khác; hãy cài đúng phiên bản đã ghim trong `requirements.txt`. Nếu môi trường của bạn không cung cấp wheel tương thích, cần chạy trong môi trường Python được scikit-learn 1.9.0 hỗ trợ thay vì tự ý thay đổi artifact.
 
 Đây là sản phẩm học tập trên bộ dữ liệu Pima, không phải công cụ chẩn đoán. Không nhập dữ liệu định danh cá nhân hoặc sử dụng kết quả để quyết định điều trị.
+
+
+## 6. Trạng thái nâng cấp Streamlit 1.64.0
+
+- Đã cập nhật pin trong `requirements.txt` từ `streamlit==1.52.2` thành `streamlit==1.64.0`.
+- Đã rà soát mã `app.py`: các API đang dùng (`set_page_config`, `cache_resource`, `form`, `number_input`, `form_submit_button`, `metric`, `progress`, `expander`) không cần thay đổi cú pháp cho bản nâng cấp này.
+- Lưu ý: gói ZIP này đã cấu hình để cài Streamlit 1.64.0, nhưng phiên chạy tạo file không có kết nối PyPI nên không thể cài package và khởi chạy giao diện Streamlit 1.64.0 ngay tại đây. Vì vậy không khẳng định đã xác minh UI runtime trên 1.64.0.
