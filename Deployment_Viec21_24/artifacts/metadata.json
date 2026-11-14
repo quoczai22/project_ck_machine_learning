@@ -1,0 +1,79 @@
+{
+  "project": "DA 02 - Pima Indians Diabetes",
+  "artifact_file": "pipeline.joblib",
+  "artifact_origin": "Model/Viec15/Viec15_Selected_Model.joblib from supplied project ZIP; copied without retraining",
+  "target_raw_dataset": "Outcome",
+  "target_training_alias_in_saved_artifact": "Class",
+  "positive_class": 1,
+  "positive_class_definition": "Outcome = 1",
+  "selected_scenario": "2_Them_Ratio",
+  "selected_model": "SVM (RBF)",
+  "selected_parameters": {
+    "C": 0.1,
+    "class_weight": "balanced",
+    "gamma": "scale",
+    "probability": true,
+    "random_state": 42
+  },
+  "selection_protocol": {
+    "method": "StratifiedKFold + GridSearchCV",
+    "folds": 5,
+    "random_state": 42,
+    "selection_data": "TRAIN only",
+    "primary_metric": "Recall",
+    "constraints": "CV_F1 >= best_CV_F1 - 0.03 and CV_ROC_AUC >= best_CV_ROC_AUC - 0.03",
+    "test_used_for_model_selection": false
+  },
+  "feature_order": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age",
+    "Glucose_BMI_Ratio"
+  ],
+  "input_features": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "zero_as_missing": [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+  ],
+  "feature_engineering": "Glucose_BMI_Ratio = Glucose / BMI; zero BMI is treated as missing; infinities become NaN",
+  "pipeline_steps": [
+    "SimpleImputer(strategy=median)",
+    "StandardScaler()",
+    "SVC(kernel=rbf, probability=true)"
+  ],
+  "prediction_label_rule": "Use fitted estimator.predict(); do not replace this with a manually applied 0.5 probability threshold.",
+  "cv_metrics": {
+    "recall": 0.7946843853820599,
+    "f1": 0.671303155769213,
+    "roc_auc": 0.8303211517165006,
+    "accuracy": 0.7296414767426362,
+    "precision": 0.5835152756443078
+  },
+  "final_test_metrics_from_project": {
+    "accuracy": 0.6688311688311688,
+    "precision": 0.5189873417721519,
+    "recall": 0.7592592592592593,
+    "f1": 0.6165413533834586,
+    "roc_auc": 0.7831481481481481
+  },
+  "compatibility_note": "The supplied joblib records scikit-learn 1.9.0 as its training version. Install the pinned scikit-learn version in requirements.txt before loading it.",
+  "medical_disclaimer": "Educational demonstration only; not a medical diagnosis or clinical decision-support system.",
+  "artifact_sha256": "ce4cb5761f50172e74c678df78fb7f681ad4b39bb798648b0f333d6efffb049d"
+}

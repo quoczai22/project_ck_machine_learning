@@ -1,0 +1,10 @@
+AUTOMATED TEST RESULT
+====================
+Command: python -m pytest -q
+Result: 6 passed
+
+Environment note:
+The current build container has scikit-learn 1.8.0, while the supplied joblib artifact was serialized with scikit-learn 1.9.0. Tests completed, but scikit-learn emitted InconsistentVersionWarning. For the actual demo environment, install requirements.txt (which pins scikit-learn==1.9.0) before loading the artifact.
+
+Streamlit browser/UI test:
+Not executed in this build container because Streamlit is not installed here. Run `pip install -r requirements.txt`, then `streamlit run app.py` and complete docs/TEST_CHECKLIST.md on the presentation computer.
